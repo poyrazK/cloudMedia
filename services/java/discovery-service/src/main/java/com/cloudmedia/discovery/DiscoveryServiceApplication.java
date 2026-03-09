@@ -8,16 +8,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
 public class DiscoveryServiceApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(DiscoveryServiceApplication.class, args);
-    }
+	public static void main(String[] args) {
+		SpringApplication.run(DiscoveryServiceApplication.class, args);
+	}
 }
 
 @RestController
 @RequestMapping("/health")
 class DiscoveryHealthController {
-    @GetMapping
-    public String health() {
-        return "ok";
-    }
+	@GetMapping
+	public String health() {
+		return "ok";
+	}
 }

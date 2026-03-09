@@ -51,6 +51,19 @@ jobs:
             echo "Java modules not fully scaffolded yet; skipping validation."
           fi
 
+      - name: Java lint (spotless + checkstyle)
+        run: |
+          if [ -f services/java/pom.xml ] \
+            && [ -d services/java/identity-service ] \
+            && [ -d services/java/content-service ] \
+            && [ -d services/java/social-service ] \
+            && [ -d services/java/policy-service ] \
+            && [ -d services/java/discovery-service ]; then
+            mvn -B -q -f services/java/pom.xml spotless:check checkstyle:check
+          else
+            echo "Java modules not fully scaffolded yet; skipping lint."
+          fi
+
       - name: Go validation (if go.mod exists)
         run: |
           if [ -f go.mod ]; then
@@ -58,3 +71,9 @@ jobs:
           else
             echo "No Go module yet; skipping Go validation."
           fi
+
+      - name: Go lint (golangci-lint)
+        if: ${{ hashFiles('**/go.mod') != '' }}
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.60

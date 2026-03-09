@@ -8,16 +8,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
 public class IdentityServiceApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(IdentityServiceApplication.class, args);
-    }
+	public static void main(String[] args) {
+		SpringApplication.run(IdentityServiceApplication.class, args);
+	}
 }
 
 @RestController
 @RequestMapping("/health")
 class IdentityHealthController {
-    @GetMapping
-    public String health() {
-        return "ok";
-    }
+	@GetMapping
+	public String health() {
+		return "ok";
+	}
 }

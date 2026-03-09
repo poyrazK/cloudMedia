@@ -8,16 +8,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
 public class SocialServiceApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(SocialServiceApplication.class, args);
-    }
+	public static void main(String[] args) {
+		SpringApplication.run(SocialServiceApplication.class, args);
+	}
 }
 
 @RestController
 @RequestMapping("/health")
 class SocialHealthController {
-    @GetMapping
-    public String health() {
-        return "ok";
-    }
+	@GetMapping
+	public String health() {
+		return "ok";
+	}
 }

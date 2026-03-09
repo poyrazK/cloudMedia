@@ -8,16 +8,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
 public class PolicyServiceApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(PolicyServiceApplication.class, args);
-    }
+	public static void main(String[] args) {
+		SpringApplication.run(PolicyServiceApplication.class, args);
+	}
 }
 
 @RestController
 @RequestMapping("/health")
 class PolicyHealthController {
-    @GetMapping
-    public String health() {
-        return "ok";
-    }
+	@GetMapping
+	public String health() {
+		return "ok";
+	}
 }

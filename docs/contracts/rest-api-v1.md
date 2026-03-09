@@ -46,6 +46,7 @@ This document defines the MVP API contract groups, standards, and core request/r
 
 ### `POST /v1/auth/social-login`
 - Request: provider, provider_token, optional device info
+- MVP provider support: `GOOGLE` only
 - Response: access token + refresh token + session id
 
 ### `POST /v1/auth/refresh`
@@ -55,6 +56,13 @@ This document defines the MVP API contract groups, standards, and core request/r
 ### `POST /v1/auth/logout`
 - Request: current session or all sessions flag
 - Response: success status
+
+### 2.1 Identity MVP implementation notes
+- Access token TTL: `15 minutes`
+- Refresh token TTL: `30 days`
+- Refresh strategy: rotation on every refresh request
+- Reuse detection: revoke refresh token family + owning session
+- Session cap: max `5` active sessions per user (oldest revoked first)
 
 ## 3) Upload and content
 

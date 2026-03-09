@@ -130,7 +130,7 @@ jobs:
 
   go-quality:
     needs: changes
-    if: ${{ hashFiles('**/go.mod') != '' && (github.event_name != 'pull_request' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true') }}
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -151,6 +151,7 @@ jobs:
           fi
 
       - name: Go lint (golangci-lint)
+        if: ${{ hashFiles('**/go.mod') != '' }}
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.60

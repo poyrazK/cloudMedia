@@ -21,8 +21,9 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 - Each module includes app entrypoint and health endpoint stub.
 
 ### PR-003: identity-service MVP
-- Email/social login controller stubs.
-- JWT + refresh rotation plumbing and storage interfaces.
+- Phase A (done): auth controller stubs and request/response contracts.
+- Phase B (next): JWT + refresh rotation plumbing and storage interfaces.
+- Phase C (next): login/social/refresh/logout service logic + tests.
 
 ### PR-004: content-service MVP
 - Draft, publish, unpublish endpoints.
@@ -65,3 +66,9 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 - At least one review approval.
 - CI green required.
 - No direct pushes to `main` after bootstrap.
+
+## Current progress
+
+- PR-001: completed
+- PR-002: completed
+- PR-003: in progress (Phase A completed)

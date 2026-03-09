@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  docs-and-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Markdown lint
+        uses: DavidAnson/markdownlint-cli2-action@v17
+        with:
+          globs: "**/*.md"
+
+      - name: Validate required contract files
+        run: bash scripts/ci/check-contract-files.sh
+
+  backend-readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Java validation (if all modules exist)
+        run: |
+          if [ -f services/java/pom.xml ] \
+            && [ -d services/java/identity-service ] \
+            && [ -d services/java/content-service ] \
+            && [ -d services/java/social-service ] \
+            && [ -d services/java/policy-service ] \
+            && [ -d services/java/discovery-service ]; then
+            mvn -B -q -f services/java/pom.xml -DskipTests validate
+          else
+            echo "Java modules not fully scaffolded yet; skipping validation."
+          fi
+
+      - name: Go validation (if go.mod exists)
+        run: |
+          if [ -f go.mod ]; then
+            go test ./...
+          else
+            echo "No Go module yet; skipping Go validation."
+          fi

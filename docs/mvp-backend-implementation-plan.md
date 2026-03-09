@@ -439,3 +439,12 @@ Architecture decisions are recorded in `docs/adr/README.md` and tracked as indiv
 - `docs/adr/0010-discovery-balanced-ranking.md`
 - `docs/adr/0011-4k-access-for-all-users.md`
 - `docs/adr/0012-chat-retention-seven-days.md`
+
+---
+
+## 18) Contract Documents
+
+Implementation starts from these contract docs:
+
+- REST API contract: `docs/contracts/rest-api-v1.md`
+- Kafka event contract: `docs/contracts/kafka-event-catalog.md`

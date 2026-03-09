@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: social-service
+
+server:
+  port: 8083

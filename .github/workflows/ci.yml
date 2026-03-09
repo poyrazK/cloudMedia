@@ -64,6 +64,14 @@ jobs:
             echo "Java modules not fully scaffolded yet; skipping lint."
           fi
 
+      - name: Identity service tests and coverage check
+        run: |
+          if [ -f services/java/identity-service/pom.xml ]; then
+            mvn -B -q -f services/java/pom.xml -pl identity-service -am verify
+          else
+            echo "Identity service not scaffolded yet; skipping tests."
+          fi
+
       - name: Go validation (if go.mod exists)
         run: |
           if [ -f go.mod ]; then

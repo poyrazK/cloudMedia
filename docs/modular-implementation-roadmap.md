@@ -66,6 +66,8 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 - At least one review approval.
 - CI green required.
 - No direct pushes to `main` after bootstrap.
+- Required checks (current): `docs-and-contracts`, `java-quality`, `java-tests-identity`.
+- `go-quality` becomes required when `go.mod` is introduced.
 
 ## Current progress
 

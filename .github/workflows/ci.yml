@@ -7,7 +7,44 @@ on:
       - main
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+      java: ${{ steps.filter.outputs.java }}
+      identity: ${{ steps.filter.outputs.identity }}
+      go: ${{ steps.filter.outputs.go }}
+      ci: ${{ steps.filter.outputs.ci }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            docs:
+              - '**/*.md'
+              - 'docs/**'
+              - 'scripts/ci/**'
+              - '.markdownlint.json'
+            java:
+              - 'services/java/**'
+            identity:
+              - 'services/java/identity-service/**'
+              - 'services/java/pom.xml'
+            go:
+              - '**/*.go'
+              - 'go.mod'
+              - 'go.sum'
+              - '.golangci.yml'
+            ci:
+              - '.github/workflows/ci.yml'
+
   docs-and-contracts:
+    needs: changes
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,7 +58,9 @@ jobs:
       - name: Validate required contract files
         run: bash scripts/ci/check-contract-files.sh
 
-  backend-readiness:
+  java-quality:
+    needs: changes
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.java == 'true' || needs.changes.outputs.ci == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,37 +71,38 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+          cache: maven
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.22'
-
-      - name: Java validation (if all modules exist)
+      - name: Java validation
         run: |
-          if [ -f services/java/pom.xml ] \
-            && [ -d services/java/identity-service ] \
-            && [ -d services/java/content-service ] \
-            && [ -d services/java/social-service ] \
-            && [ -d services/java/policy-service ] \
-            && [ -d services/java/discovery-service ]; then
+          if [ -f services/java/pom.xml ]; then
             mvn -B -q -f services/java/pom.xml -DskipTests validate
           else
-            echo "Java modules not fully scaffolded yet; skipping validation."
+            echo "Java parent module not present; skipping validation."
           fi
 
       - name: Java lint (spotless + checkstyle)
         run: |
-          if [ -f services/java/pom.xml ] \
-            && [ -d services/java/identity-service ] \
-            && [ -d services/java/content-service ] \
-            && [ -d services/java/social-service ] \
-            && [ -d services/java/policy-service ] \
-            && [ -d services/java/discovery-service ]; then
+          if [ -f services/java/pom.xml ]; then
             mvn -B -q -f services/java/pom.xml spotless:check checkstyle:check
           else
-            echo "Java modules not fully scaffolded yet; skipping lint."
+            echo "Java parent module not present; skipping lint."
           fi
+
+  java-tests-identity:
+    needs: changes
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.identity == 'true' || needs.changes.outputs.java == 'true' || needs.changes.outputs.ci == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
 
       - name: Identity service tests and coverage check
         run: |
@@ -72,7 +112,37 @@ jobs:
             echo "Identity service not scaffolded yet; skipping tests."
           fi
 
-      - name: Go validation (if go.mod exists)
+      - name: Upload identity test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: identity-surefire-reports
+          path: services/java/identity-service/target/surefire-reports/**
+          if-no-files-found: ignore
+
+      - name: Upload identity coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: identity-jacoco-report
+          path: services/java/identity-service/target/site/jacoco/**
+          if-no-files-found: ignore
+
+  go-quality:
+    needs: changes
+    if: ${{ hashFiles('**/go.mod') != '' && (github.event_name != 'pull_request' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Go test
         run: |
           if [ -f go.mod ]; then
             go test ./...
@@ -81,7 +151,6 @@ jobs:
           fi
 
       - name: Go lint (golangci-lint)
-        if: ${{ hashFiles('**/go.mod') != '' }}
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.60

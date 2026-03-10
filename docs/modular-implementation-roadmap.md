@@ -22,8 +22,9 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 
 ### PR-003: identity-service MVP
 - Phase A (done): auth controller stubs and request/response contracts.
-- Phase B (next): JWT + refresh rotation plumbing and storage interfaces.
-- Phase C (next): login/social/refresh/logout service logic + tests.
+- Phase B (in progress): persistence foundation added (Flyway migrations, JPA entities, repositories, repository tests).
+- Phase C (next): JWT + refresh rotation plumbing and storage interfaces.
+- Phase D (next): login/social/refresh/logout service logic + tests.
 
 ### PR-004: content-service MVP
 - Draft, publish, unpublish endpoints.
@@ -73,4 +74,4 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 
 - PR-001: completed
 - PR-002: completed
-- PR-003: in progress (Phase A completed)
+- PR-003: in progress (Phase A and persistence foundation completed)

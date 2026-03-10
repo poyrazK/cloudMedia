@@ -25,6 +25,7 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 - Phase B (in progress): persistence foundation added (Flyway migrations, JPA entities, repositories, repository tests).
 - Phase C (next): JWT + refresh rotation plumbing and storage interfaces.
 - Phase D (next): login/social/refresh/logout service logic + tests.
+- Note: Google social login currently uses a fake token verifier in backend-only development mode.
 
 ### PR-004: content-service MVP
 - Draft, publish, unpublish endpoints.

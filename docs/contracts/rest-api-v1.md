@@ -47,6 +47,8 @@ This document defines the MVP API contract groups, standards, and core request/r
 ### `POST /v1/auth/social-login`
 - Request: provider, provider_token, optional device info
 - MVP provider support: `GOOGLE` only
+- Current implementation uses a fake verifier for development/testing only.
+- Fake token format: `fake-google:<subject>:<email>`
 - Response: access token + refresh token + session id
 
 ### `POST /v1/auth/refresh`

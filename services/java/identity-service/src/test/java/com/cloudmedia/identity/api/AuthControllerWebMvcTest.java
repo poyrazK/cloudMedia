@@ -1,7 +1,10 @@
 package com.cloudmedia.identity.api;
 
 import com.cloudmedia.identity.auth.config.AuthProperties;
+import com.cloudmedia.identity.auth.service.AuthLoginUseCase;
+import com.cloudmedia.identity.auth.service.AuthLogoutUseCase;
 import com.cloudmedia.identity.auth.service.AuthRefreshUseCase;
+import com.cloudmedia.identity.auth.service.AuthSocialLoginUseCase;
 import com.cloudmedia.identity.auth.service.RefreshResult;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,19 +28,32 @@ class AuthControllerWebMvcTest {
 	@MockBean
 	private AuthRefreshUseCase authRefreshService;
 
+	@MockBean
+	private AuthLoginUseCase authLoginService;
+
+	@MockBean
+	private AuthSocialLoginUseCase authSocialLoginService;
+
+	@MockBean
+	private AuthLogoutUseCase authLogoutService;
+
 	@Autowired
 	private AuthProperties authProperties;
 
 	@Test
-	void loginReturnsNotImplementedEnvelopeWhenPayloadValid() throws Exception {
+	void loginReturnsTokenEnvelopeWhenPayloadValid() throws Exception {
+		given(authLoginService.login(anyString(), anyString(), org.mockito.ArgumentMatchers.any()))
+				.willReturn(new RefreshResult("access-login", "refresh-login", "sess-login"));
+
 		mockMvc.perform(post("/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
 				.header("X-Request-Id", "req_login_1").content("""
-						{
-						  "email": "user@example.com",
-						  "password": "password123"
-						}
-						""")).andExpect(status().isNotImplemented())
-				.andExpect(jsonPath("$.error.code").value("AUTH_NOT_IMPLEMENTED"))
+								{
+								  "email": "user@example.com",
+								  "password": "password123"
+								}
+						""")).andExpect(status().isOk()).andExpect(jsonPath("$.data.accessToken").value("access-login"))
+				.andExpect(jsonPath("$.data.refreshToken").value("refresh-login"))
+				.andExpect(jsonPath("$.data.sessionId").value("sess-login"))
 				.andExpect(jsonPath("$.meta.requestId").value("req_login_1"))
 				.andExpect(jsonPath("$.meta.timestamp").exists());
 	}
@@ -54,15 +70,21 @@ class AuthControllerWebMvcTest {
 	}
 
 	@Test
-	void socialLoginReturnsNotImplementedEnvelopeWhenGooglePayloadValid() throws Exception {
+	void socialLoginReturnsTokenEnvelopeWhenGooglePayloadValid() throws Exception {
+		given(authSocialLoginService.socialLogin(org.mockito.ArgumentMatchers.any(), anyString(),
+				org.mockito.ArgumentMatchers.any()))
+				.willReturn(new RefreshResult("access-social", "refresh-social", "sess-social"));
+
 		mockMvc.perform(post("/v1/auth/social-login").contentType(MediaType.APPLICATION_JSON)
 				.header("X-Request-Id", "req_social_1").content("""
-						{
-						  "provider": "GOOGLE",
-						  "providerToken": "token-123"
-						}
-						""")).andExpect(status().isNotImplemented())
-				.andExpect(jsonPath("$.error.code").value("AUTH_NOT_IMPLEMENTED"))
+								{
+								  "provider": "GOOGLE",
+								  "providerToken": "token-123"
+								}
+						""")).andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.accessToken").value("access-social"))
+				.andExpect(jsonPath("$.data.refreshToken").value("refresh-social"))
+				.andExpect(jsonPath("$.data.sessionId").value("sess-social"))
 				.andExpect(jsonPath("$.meta.requestId").value("req_social_1"));
 	}
 
@@ -97,16 +119,14 @@ class AuthControllerWebMvcTest {
 	}
 
 	@Test
-	void logoutReturnsNotImplementedEnvelopeWhenPayloadValid() throws Exception {
+	void logoutReturnsSuccessEnvelopeWhenPayloadValid() throws Exception {
 		mockMvc.perform(post("/v1/auth/logout").contentType(MediaType.APPLICATION_JSON)
 				.header("X-Request-Id", "req_logout_1").content("""
-						{
-						  "sessionId": "sess_123",
-						  "allSessions": false
-						}
-						""")).andExpect(status().isNotImplemented())
-				.andExpect(jsonPath("$.error.code").value("AUTH_NOT_IMPLEMENTED"))
-				.andExpect(jsonPath("$.meta.requestId").value("req_logout_1"));
+								{
+								  "sessionId": "sess_123",
+								  "allSessions": false
+								}
+						""")).andExpect(status().isOk()).andExpect(jsonPath("$.meta.requestId").value("req_logout_1"));
 	}
 
 }

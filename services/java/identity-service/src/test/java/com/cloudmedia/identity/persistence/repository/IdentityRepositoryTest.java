@@ -142,6 +142,7 @@ class IdentityRepositoryTest {
 		entity.setId(uuid());
 		entity.setSession(session);
 		entity.setTokenHash(tokenHash);
+		entity.setFamilyId(entity.getId());
 		entity.setIssuedAt(LocalDateTime.now());
 		entity.setExpiresAt(LocalDateTime.now().plusDays(30));
 		entity.setRevokedAt(revokedAt);

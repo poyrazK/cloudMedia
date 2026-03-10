@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SessionRepository extends JpaRepository<SessionEntity, String> {
 	List<SessionEntity> findByUser_IdAndRevokedAtIsNullOrderByCreatedAtAsc(String userId);
+
+	List<SessionEntity> findByUser_IdAndRevokedAtIsNull(String userId);
 }

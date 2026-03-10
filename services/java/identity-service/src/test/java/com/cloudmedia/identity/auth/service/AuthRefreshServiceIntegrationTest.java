@@ -96,7 +96,8 @@ class AuthRefreshServiceIntegrationTest {
 		var activeSessions = sessionRepository.findByUser_IdAndRevokedAtIsNullOrderByCreatedAtAsc(user.getId());
 		assertEquals(4, activeSessions.size());
 
-		long revokedCount = sessionRepository.findAll().stream().filter(session -> session.getRevokedAt() != null).count();
+		long revokedCount = sessionRepository.findAll().stream().filter(session -> session.getRevokedAt() != null)
+				.count();
 		assertTrue(revokedCount >= 1);
 	}
 

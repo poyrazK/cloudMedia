@@ -9,3 +9,10 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+
+auth:
+  jwt-issuer: cloudmedia-test
+  jwt-secret: test-secret-key-test-secret-key-test-secret-key
+  access-token-ttl: 15m
+  refresh-token-ttl: 30d
+  max-active-sessions: 5

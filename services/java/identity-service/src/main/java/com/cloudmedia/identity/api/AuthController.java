@@ -1,5 +1,7 @@
 package com.cloudmedia.identity.api;
 
+import com.cloudmedia.identity.auth.config.AuthProperties;
+import com.cloudmedia.identity.auth.service.AuthRefreshUseCase;
 import com.cloudmedia.identity.api.dto.AuthTokensResponse;
 import com.cloudmedia.identity.api.dto.LoginRequest;
 import com.cloudmedia.identity.api.dto.LogoutRequest;
@@ -23,6 +25,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v1/auth")
 public class AuthController {
 
+	private final AuthRefreshUseCase authRefreshService;
+	private final AuthProperties authProperties;
+
+	public AuthController(AuthRefreshUseCase authRefreshService, AuthProperties authProperties) {
+		this.authRefreshService = authRefreshService;
+		this.authProperties = authProperties;
+	}
+
 	@PostMapping("/login")
 	public ResponseEntity<ApiSuccessResponse<AuthTokensResponse>> login(@Valid @RequestBody LoginRequest request,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
@@ -41,8 +51,11 @@ public class AuthController {
 	@PostMapping("/refresh")
 	public ResponseEntity<ApiSuccessResponse<AuthTokensResponse>> refresh(@Valid @RequestBody RefreshRequest request,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
-		throw new ApiException(HttpStatus.NOT_IMPLEMENTED, "AUTH_NOT_IMPLEMENTED",
-				"Refresh flow is not implemented yet", meta(requestId));
+		var result = authRefreshService.rotateRefreshToken(request.refreshToken());
+		AuthTokensResponse response = new AuthTokensResponse(result.accessToken(), result.refreshToken(),
+				result.sessionId(), authProperties.getAccessTokenTtl().toSeconds(),
+				authProperties.getRefreshTokenTtl().toSeconds());
+		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
 	}
 
 	@PostMapping("/logout")

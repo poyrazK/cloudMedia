@@ -2,5 +2,12 @@ spring:
   application:
     name: identity-service
 
+auth:
+  jwt-issuer: cloudmedia-identity
+  jwt-secret: change-me-in-production-change-me-in-production
+  access-token-ttl: 15m
+  refresh-token-ttl: 30d
+  max-active-sessions: 5
+
 server:
   port: 8081

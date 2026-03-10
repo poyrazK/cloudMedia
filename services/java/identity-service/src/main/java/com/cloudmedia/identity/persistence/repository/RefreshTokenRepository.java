@@ -9,4 +9,6 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshTokenEntity
 	Optional<RefreshTokenEntity> findByTokenHash(String tokenHash);
 
 	List<RefreshTokenEntity> findBySession_IdAndRevokedAtIsNull(String sessionId);
+
+	List<RefreshTokenEntity> findByFamilyIdAndRevokedAtIsNull(String familyId);
 }

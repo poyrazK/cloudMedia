@@ -463,6 +463,7 @@ Current completed slices:
   - Flyway migrations for `users`, `user_credentials`, `oauth_accounts`, `sessions`, `refresh_tokens`
   - JPA entities and Spring Data repositories
   - DataJpa repository tests for uniqueness constraints and lookup queries
+- Identity social login testing mode uses a fake Google token verifier with format `fake-google:<subject>:<email>`
 
 Next active slice:
 

@@ -448,3 +448,23 @@ Implementation starts from these contract docs:
 
 - REST API contract: `docs/contracts/rest-api-v1.md`
 - Kafka event contract: `docs/contracts/kafka-event-catalog.md`
+
+---
+
+## 19) Implementation Status Snapshot
+
+Current completed slices:
+
+- CI baseline + lint gates are in place (`docs-and-contracts`, `java-quality`, `java-tests-identity`)
+- Java multi-module service skeleton is complete
+- Identity API stubs and response/error contracts are implemented
+- Identity test baseline is implemented (controller contract tests, exception handler tests, DTO validation tests)
+- Identity persistence foundation is implemented:
+  - Flyway migrations for `users`, `user_credentials`, `oauth_accounts`, `sessions`, `refresh_tokens`
+  - JPA entities and Spring Data repositories
+  - DataJpa repository tests for uniqueness constraints and lookup queries
+
+Next active slice:
+
+- Identity token/session logic (JWT issue/verify, refresh rotation, reuse detection, and max-5 session cap behavior)
+- Kafka event contract: `docs/contracts/kafka-event-catalog.md`

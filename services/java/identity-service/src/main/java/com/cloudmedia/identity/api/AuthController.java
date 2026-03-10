@@ -1,7 +1,7 @@
 package com.cloudmedia.identity.api;
 
 import com.cloudmedia.identity.auth.config.AuthProperties;
-import com.cloudmedia.identity.auth.service.AuthRefreshService;
+import com.cloudmedia.identity.auth.service.AuthRefreshUseCase;
 import com.cloudmedia.identity.api.dto.AuthTokensResponse;
 import com.cloudmedia.identity.api.dto.LoginRequest;
 import com.cloudmedia.identity.api.dto.LogoutRequest;
@@ -25,10 +25,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v1/auth")
 public class AuthController {
 
-	private final AuthRefreshService authRefreshService;
+	private final AuthRefreshUseCase authRefreshService;
 	private final AuthProperties authProperties;
 
-	public AuthController(AuthRefreshService authRefreshService, AuthProperties authProperties) {
+	public AuthController(AuthRefreshUseCase authRefreshService, AuthProperties authProperties) {
 		this.authRefreshService = authRefreshService;
 		this.authProperties = authProperties;
 	}
@@ -52,11 +52,8 @@ public class AuthController {
 	public ResponseEntity<ApiSuccessResponse<AuthTokensResponse>> refresh(@Valid @RequestBody RefreshRequest request,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
 		var result = authRefreshService.rotateRefreshToken(request.refreshToken());
-		AuthTokensResponse response = new AuthTokensResponse(
-				result.accessToken(),
-				result.refreshToken(),
-				result.sessionId(),
-				authProperties.getAccessTokenTtl().toSeconds(),
+		AuthTokensResponse response = new AuthTokensResponse(result.accessToken(), result.refreshToken(),
+				result.sessionId(), authProperties.getAccessTokenTtl().toSeconds(),
 				authProperties.getRefreshTokenTtl().toSeconds());
 		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
 	}

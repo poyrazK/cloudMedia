@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class AuthRefreshService {
+public class AuthRefreshService implements AuthRefreshUseCase {
 
 	private final AuthProperties authProperties;
 	private final JwtAccessTokenService jwtAccessTokenService;
@@ -27,13 +27,9 @@ public class AuthRefreshService {
 	private final RefreshTokenRepository refreshTokenRepository;
 	private final SessionLifecycleService sessionLifecycleService;
 
-	public AuthRefreshService(
-			AuthProperties authProperties,
-			JwtAccessTokenService jwtAccessTokenService,
-			RefreshTokenGenerator refreshTokenGenerator,
-			RefreshTokenHasher refreshTokenHasher,
-			RefreshTokenRepository refreshTokenRepository,
-			SessionLifecycleService sessionLifecycleService) {
+	public AuthRefreshService(AuthProperties authProperties, JwtAccessTokenService jwtAccessTokenService,
+			RefreshTokenGenerator refreshTokenGenerator, RefreshTokenHasher refreshTokenHasher,
+			RefreshTokenRepository refreshTokenRepository, SessionLifecycleService sessionLifecycleService) {
 		this.authProperties = authProperties;
 		this.jwtAccessTokenService = jwtAccessTokenService;
 		this.refreshTokenGenerator = refreshTokenGenerator;
@@ -42,6 +38,7 @@ public class AuthRefreshService {
 		this.sessionLifecycleService = sessionLifecycleService;
 	}
 
+	@Override
 	@Transactional
 	public RefreshResult rotateRefreshToken(String rawRefreshToken) {
 		LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
@@ -56,7 +53,8 @@ public class AuthRefreshService {
 		}
 
 		SessionEntity session = currentToken.getSession();
-		if (session.getRevokedAt() != null || currentToken.getExpiresAt().isBefore(now) || session.getExpiresAt().isBefore(now)) {
+		if (session.getRevokedAt() != null || currentToken.getExpiresAt().isBefore(now)
+				|| session.getExpiresAt().isBefore(now)) {
 			throw unauthorized("REFRESH_TOKEN_EXPIRED", "Refresh token is expired or revoked");
 		}
 
@@ -70,18 +68,20 @@ public class AuthRefreshService {
 		newToken.setIssuedAt(now);
 		newToken.setExpiresAt(now.plus(authProperties.getRefreshTokenTtl()));
 
-		refreshTokenRepository.save(newToken);
+		RefreshTokenEntity persistedNewToken = refreshTokenRepository.save(newToken);
 
 		currentToken.setRevokedAt(now);
-		currentToken.setReplacedBy(newToken);
+		currentToken.setReplacedBy(persistedNewToken);
 		refreshTokenRepository.save(currentToken);
 
-		String accessToken = jwtAccessTokenService.issueAccessToken(session.getUser().getId(), session.getId(), Instant.now());
+		String accessToken = jwtAccessTokenService.issueAccessToken(session.getUser().getId(), session.getId(),
+				Instant.now());
 		return new RefreshResult(accessToken, newRawRefreshToken, session.getId());
 	}
 
 	private void handleReuseDetection(RefreshTokenEntity currentToken, LocalDateTime now) {
-		List<RefreshTokenEntity> activeFamilyTokens = refreshTokenRepository.findByFamilyIdAndRevokedAtIsNull(currentToken.getFamilyId());
+		List<RefreshTokenEntity> activeFamilyTokens = refreshTokenRepository
+				.findByFamilyIdAndRevokedAtIsNull(currentToken.getFamilyId());
 		for (RefreshTokenEntity token : activeFamilyTokens) {
 			token.setRevokedAt(now);
 		}

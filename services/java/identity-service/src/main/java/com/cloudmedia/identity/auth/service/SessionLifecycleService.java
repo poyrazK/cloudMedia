@@ -22,7 +22,8 @@ public class SessionLifecycleService {
 
 	@Transactional
 	public void enforceSessionCap(String userId, int maxActiveSessions, LocalDateTime now) {
-		List<SessionEntity> activeSessions = sessionRepository.findByUser_IdAndRevokedAtIsNullOrderByCreatedAtAsc(userId);
+		List<SessionEntity> activeSessions = sessionRepository
+				.findByUser_IdAndRevokedAtIsNullOrderByCreatedAtAsc(userId);
 		if (activeSessions.size() < maxActiveSessions) {
 			return;
 		}
@@ -36,7 +37,8 @@ public class SessionLifecycleService {
 		session.setRevokedAt(now);
 		sessionRepository.save(session);
 
-		List<RefreshTokenEntity> activeTokens = refreshTokenRepository.findBySession_IdAndRevokedAtIsNull(session.getId());
+		List<RefreshTokenEntity> activeTokens = refreshTokenRepository
+				.findBySession_IdAndRevokedAtIsNull(session.getId());
 		for (RefreshTokenEntity token : activeTokens) {
 			token.setRevokedAt(now);
 		}

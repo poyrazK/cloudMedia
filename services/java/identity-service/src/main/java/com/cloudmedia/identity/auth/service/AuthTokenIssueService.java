@@ -23,11 +23,8 @@ public class AuthTokenIssueService {
 	private final RefreshTokenHasher refreshTokenHasher;
 	private final RefreshTokenRepository refreshTokenRepository;
 
-	public AuthTokenIssueService(
-			AuthProperties authProperties,
-			JwtAccessTokenService jwtAccessTokenService,
-			RefreshTokenGenerator refreshTokenGenerator,
-			RefreshTokenHasher refreshTokenHasher,
+	public AuthTokenIssueService(AuthProperties authProperties, JwtAccessTokenService jwtAccessTokenService,
+			RefreshTokenGenerator refreshTokenGenerator, RefreshTokenHasher refreshTokenHasher,
 			RefreshTokenRepository refreshTokenRepository) {
 		this.authProperties = authProperties;
 		this.jwtAccessTokenService = jwtAccessTokenService;
@@ -51,7 +48,8 @@ public class AuthTokenIssueService {
 
 		refreshTokenRepository.save(refreshToken);
 
-		String accessToken = jwtAccessTokenService.issueAccessToken(session.getUser().getId(), session.getId(), Instant.now());
+		String accessToken = jwtAccessTokenService.issueAccessToken(session.getUser().getId(), session.getId(),
+				Instant.now());
 		return new RefreshResult(accessToken, rawRefreshToken, session.getId());
 	}
 }

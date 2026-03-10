@@ -21,14 +21,8 @@ public class JwtAccessTokenService {
 	public String issueAccessToken(String userId, String sessionId, Instant now) {
 		Instant expiresAt = now.plus(authProperties.getAccessTokenTtl());
 
-		return Jwts.builder()
-				.subject(userId)
-				.issuer(authProperties.getJwtIssuer())
-				.issuedAt(Date.from(now))
-				.expiration(Date.from(expiresAt))
-				.claim("sid", sessionId)
-				.signWith(secretKey())
-				.compact();
+		return Jwts.builder().subject(userId).issuer(authProperties.getJwtIssuer()).issuedAt(Date.from(now))
+				.expiration(Date.from(expiresAt)).claim("sid", sessionId).signWith(secretKey()).compact();
 	}
 
 	private SecretKey secretKey() {

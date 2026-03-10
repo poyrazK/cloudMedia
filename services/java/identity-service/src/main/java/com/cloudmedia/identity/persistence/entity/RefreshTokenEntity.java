@@ -24,6 +24,9 @@ public class RefreshTokenEntity {
 	@Column(name = "token_hash", nullable = false, length = 128)
 	private String tokenHash;
 
+	@Column(name = "family_id", nullable = false, length = 36)
+	private String familyId;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "parent_token_id")
 	private RefreshTokenEntity parentToken;
@@ -63,6 +66,14 @@ public class RefreshTokenEntity {
 
 	public void setTokenHash(String tokenHash) {
 		this.tokenHash = tokenHash;
+	}
+
+	public String getFamilyId() {
+		return familyId;
+	}
+
+	public void setFamilyId(String familyId) {
+		this.familyId = familyId;
 	}
 
 	public RefreshTokenEntity getParentToken() {

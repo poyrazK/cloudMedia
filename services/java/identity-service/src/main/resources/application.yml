@@ -1,6 +1,8 @@
 spring:
   application:
     name: identity-service
+  jpa:
+    open-in-view: false
 
 auth:
   jwt-issuer: cloudmedia-identity
@@ -8,6 +10,7 @@ auth:
   access-token-ttl: 15m
   refresh-token-ttl: 30d
   max-active-sessions: 5
+  social-token-verifier-mode: fake
 
 server:
   port: 8081

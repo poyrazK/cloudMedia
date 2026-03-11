@@ -7,6 +7,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+    open-in-view: false
   flyway:
     enabled: true
 
@@ -16,3 +17,4 @@ auth:
   access-token-ttl: 15m
   refresh-token-ttl: 30d
   max-active-sessions: 5
+  social-token-verifier-mode: fake

@@ -474,10 +474,14 @@ Current completed slices:
   - channel, channel_members, and content schema migrations
   - JPA entities and repositories for channels/members/content
   - DataJpa repository tests for uniqueness and query behavior
+- Content-service channel APIs are implemented:
+  - explicit channel create endpoint with owner membership assignment
+  - channel lookup by id and slug
+  - user channel listing endpoint
 
 Next active slice:
 
 - Content-service API foundation:
-  - explicit channel creation and membership management primitives
-  - content draft/update and publish lifecycle endpoints
+  - content draft/update endpoints
+  - publish/unpublish lifecycle endpoints
   - publish guard requiring playable renditions readiness

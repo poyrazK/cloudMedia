@@ -29,8 +29,10 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 - Note: Google social login currently uses a fake token verifier in backend-only development mode.
 
 ### PR-004: content-service MVP
-- Draft, publish, unpublish endpoints.
-- Playback metadata endpoint with policy integration contract.
+- Phase A (in progress): persistence foundation (Flyway migrations, JPA entities, repositories, repository tests).
+- Phase B (next): channel APIs (explicit create/list/get).
+- Phase C (next): content draft/update APIs.
+- Phase D (next): publish/unpublish workflow with playback-ready guard.
 
 ### PR-005: policy-service MVP
 - Age restriction and geo policy CRUD.
@@ -76,4 +78,5 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 
 - PR-001: completed
 - PR-002: completed
-- PR-003: in progress (Phases A-D complete, Phase E in progress)
+- PR-003: completed
+- PR-004: in progress (Phase A underway)

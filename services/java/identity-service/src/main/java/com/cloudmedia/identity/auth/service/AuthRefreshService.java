@@ -5,6 +5,7 @@ import com.cloudmedia.identity.auth.token.JwtAccessTokenService;
 import com.cloudmedia.identity.auth.token.RefreshTokenGenerator;
 import com.cloudmedia.identity.auth.token.RefreshTokenHasher;
 import com.cloudmedia.identity.error.ApiException;
+import com.cloudmedia.identity.metrics.AuthMetrics;
 import com.cloudmedia.identity.persistence.entity.RefreshTokenEntity;
 import com.cloudmedia.identity.persistence.entity.SessionEntity;
 import com.cloudmedia.identity.persistence.repository.RefreshTokenRepository;
@@ -26,16 +27,19 @@ public class AuthRefreshService implements AuthRefreshUseCase {
 	private final RefreshTokenHasher refreshTokenHasher;
 	private final RefreshTokenRepository refreshTokenRepository;
 	private final SessionLifecycleService sessionLifecycleService;
+	private final AuthMetrics authMetrics;
 
 	public AuthRefreshService(AuthProperties authProperties, JwtAccessTokenService jwtAccessTokenService,
 			RefreshTokenGenerator refreshTokenGenerator, RefreshTokenHasher refreshTokenHasher,
-			RefreshTokenRepository refreshTokenRepository, SessionLifecycleService sessionLifecycleService) {
+			RefreshTokenRepository refreshTokenRepository, SessionLifecycleService sessionLifecycleService,
+			AuthMetrics authMetrics) {
 		this.authProperties = authProperties;
 		this.jwtAccessTokenService = jwtAccessTokenService;
 		this.refreshTokenGenerator = refreshTokenGenerator;
 		this.refreshTokenHasher = refreshTokenHasher;
 		this.refreshTokenRepository = refreshTokenRepository;
 		this.sessionLifecycleService = sessionLifecycleService;
+		this.authMetrics = authMetrics;
 	}
 
 	@Override
@@ -49,6 +53,7 @@ public class AuthRefreshService implements AuthRefreshUseCase {
 
 		if (currentToken.getRevokedAt() != null) {
 			handleReuseDetection(currentToken, now);
+			authMetrics.onRefreshReuseDetected();
 			throw unauthorized("REFRESH_TOKEN_REUSED", "Refresh token reuse detected");
 		}
 
@@ -76,6 +81,7 @@ public class AuthRefreshService implements AuthRefreshUseCase {
 
 		String accessToken = jwtAccessTokenService.issueAccessToken(session.getUser().getId(), session.getId(),
 				Instant.now());
+		authMetrics.onRefreshSuccess();
 		return new RefreshResult(accessToken, newRawRefreshToken, session.getId());
 	}
 

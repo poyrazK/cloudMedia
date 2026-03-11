@@ -1,6 +1,7 @@
 package com.cloudmedia.identity.auth.service;
 
 import com.cloudmedia.identity.error.ApiException;
+import com.cloudmedia.identity.metrics.AuthMetrics;
 import com.cloudmedia.identity.persistence.entity.SessionEntity;
 import com.cloudmedia.identity.persistence.repository.SessionRepository;
 import java.time.LocalDateTime;
@@ -15,10 +16,13 @@ public class AuthLogoutService implements AuthLogoutUseCase {
 
 	private final SessionRepository sessionRepository;
 	private final SessionLifecycleService sessionLifecycleService;
+	private final AuthMetrics authMetrics;
 
-	public AuthLogoutService(SessionRepository sessionRepository, SessionLifecycleService sessionLifecycleService) {
+	public AuthLogoutService(SessionRepository sessionRepository, SessionLifecycleService sessionLifecycleService,
+			AuthMetrics authMetrics) {
 		this.sessionRepository = sessionRepository;
 		this.sessionLifecycleService = sessionLifecycleService;
+		this.authMetrics = authMetrics;
 	}
 
 	@Override
@@ -38,9 +42,11 @@ public class AuthLogoutService implements AuthLogoutUseCase {
 			for (SessionEntity session : activeSessions) {
 				sessionLifecycleService.revokeSessionAndActiveTokens(session, now);
 			}
+			authMetrics.onLogoutSuccess();
 			return;
 		}
 
 		sessionLifecycleService.revokeSessionAndActiveTokens(currentSession, now);
+		authMetrics.onLogoutSuccess();
 	}
 }

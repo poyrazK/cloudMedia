@@ -22,9 +22,10 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 
 ### PR-003: identity-service MVP
 - Phase A (done): auth controller stubs and request/response contracts.
-- Phase B (in progress): persistence foundation added (Flyway migrations, JPA entities, repositories, repository tests).
-- Phase C (next): JWT + refresh rotation plumbing and storage interfaces.
-- Phase D (next): login/social/refresh/logout service logic + tests.
+- Phase B (done): persistence foundation added (Flyway migrations, JPA entities, repositories, repository tests).
+- Phase C (done): JWT + refresh rotation plumbing and storage interfaces.
+- Phase D (done): login/social/refresh/logout service logic + tests.
+- Phase E (in progress): identity hardening (events, metrics, config cleanup, logout edge cases).
 - Note: Google social login currently uses a fake token verifier in backend-only development mode.
 
 ### PR-004: content-service MVP
@@ -75,4 +76,4 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 
 - PR-001: completed
 - PR-002: completed
-- PR-003: in progress (Phase A and persistence foundation completed)
+- PR-003: in progress (Phases A-D complete, Phase E in progress)

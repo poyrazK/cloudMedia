@@ -123,6 +123,13 @@ class AuthLoginSocialLogoutIntegrationTest {
 		assertFalse(refreshTokenRepository.findBySession_IdAndRevokedAtIsNull(second.sessionId()).isEmpty());
 	}
 
+	@Test
+	void logoutWithUnknownSessionFails() {
+		ApiException exception = assertThrows(ApiException.class,
+				() -> authLogoutUseCase.logout("unknown-session", false));
+		assertEquals("SESSION_NOT_FOUND", exception.getCode());
+	}
+
 	private UserEntity seedCredentialUser(String email, String rawPassword) {
 		UserEntity user = new UserEntity();
 		user.setId(UUID.randomUUID().toString());

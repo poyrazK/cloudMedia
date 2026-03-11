@@ -16,6 +16,11 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 - Add Java/Go readiness checks that skip if directories are missing.
 - Keep this PR infra-only.
 
+### PR-001.5: Local development environment
+- Docker Compose with Postgres 16, Kafka 3.8 (KRaft), Redis 7.
+- Per-service database init script and Spring Boot `local` profile.
+- Developer scripts (`start.sh`, `stop.sh`, `reset.sh`) and documentation.
+
 ### PR-002: Java multi-module skeleton
 - Add root Java aggregator and five Spring Boot service modules.
 - Each module includes app entrypoint and health endpoint stub.
@@ -77,6 +82,7 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 ## Current progress
 
 - PR-001: completed
+- PR-001.5: completed
 - PR-002: completed
 - PR-003: completed
 - PR-004: in progress (Phases A and B complete)

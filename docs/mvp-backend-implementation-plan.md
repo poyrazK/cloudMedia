@@ -464,8 +464,16 @@ Current completed slices:
   - JPA entities and Spring Data repositories
   - DataJpa repository tests for uniqueness constraints and lookup queries
 - Identity social login testing mode uses a fake Google token verifier with format `fake-google:<subject>:<email>`
+- Identity token/session core is implemented:
+  - JWT access token issuing
+  - refresh token rotation and reuse detection
+  - max-5 active session cap enforcement
+  - `/v1/auth/refresh` is fully wired
+- Identity login/social-login/logout flows are implemented end-to-end
 
 Next active slice:
 
-- Identity token/session logic (JWT issue/verify, refresh rotation, reuse detection, and max-5 session cap behavior)
-- Kafka event contract: `docs/contracts/kafka-event-catalog.md`
+- Identity hardening:
+  - identity event publishing stubs (`user.created`, `user.updated`)
+  - auth flow metrics and config hardening
+  - logout edge-case coverage

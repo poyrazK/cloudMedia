@@ -470,10 +470,14 @@ Current completed slices:
   - max-5 active session cap enforcement
   - `/v1/auth/refresh` is fully wired
 - Identity login/social-login/logout flows are implemented end-to-end
+- Content-service persistence foundation is in progress:
+  - channel, channel_members, and content schema migrations
+  - JPA entities and repositories for channels/members/content
+  - DataJpa repository tests for uniqueness and query behavior
 
 Next active slice:
 
-- Identity hardening:
-  - identity event publishing stubs (`user.created`, `user.updated`)
-  - auth flow metrics and config hardening
-  - logout edge-case coverage
+- Content-service API foundation:
+  - explicit channel creation and membership management primitives
+  - content draft/update and publish lifecycle endpoints
+  - publish guard requiring playable renditions readiness

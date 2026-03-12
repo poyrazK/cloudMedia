@@ -2,9 +2,11 @@ package com.cloudmedia.content.application.content;
 
 import com.cloudmedia.content.api.content.dto.CreateContentRequest;
 import com.cloudmedia.content.api.content.dto.UpdateContentRequest;
+import com.cloudmedia.content.error.ApiException;
 import com.cloudmedia.content.persistence.entity.ChannelEntity;
 import com.cloudmedia.content.persistence.entity.ChannelMemberEntity;
 import com.cloudmedia.content.persistence.entity.ChannelMemberRole;
+import com.cloudmedia.content.persistence.entity.ContentEntity;
 import com.cloudmedia.content.persistence.entity.ContentState;
 import com.cloudmedia.content.persistence.entity.ContentType;
 import com.cloudmedia.content.persistence.entity.ContentVisibility;
@@ -22,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
@@ -75,6 +78,55 @@ class ContentServiceIntegrationTest {
 		assertEquals(ContentVisibility.UNLISTED, updated.visibility());
 		assertNotNull(updated.updatedAt());
 		assertTrue(updated.updatedAt().isAfter(previousUpdatedAt) || updated.updatedAt().isEqual(previousUpdatedAt));
+	}
+
+	@Test
+	void publishUpdatesLifecycleWhenPlaybackReady() {
+		ChannelEntity channel = saveChannel("channel-content-3", "content-channel-three");
+		saveMembership(channel, "user-3", ChannelMemberRole.OWNER);
+		var created = contentService.createDraft(new CreateContentRequest("user-3", "channel-content-3", "Ready title",
+				"Ready description", ContentType.VIDEO, ContentVisibility.PUBLIC));
+
+		ContentEntity entity = contentRepository.findById(created.id()).orElseThrow();
+		entity.setPlaybackReady(true);
+		contentRepository.saveAndFlush(entity);
+
+		var published = contentService.publish(created.id(), "user-3");
+
+		assertEquals(ContentState.PUBLISHED, published.state());
+		assertNotNull(published.publishedAt());
+		assertEquals(ContentVisibility.PUBLIC, published.visibility());
+	}
+
+	@Test
+	void publishFailsWhenPlaybackNotReady() {
+		ChannelEntity channel = saveChannel("channel-content-4", "content-channel-four");
+		saveMembership(channel, "user-4", ChannelMemberRole.OWNER);
+		var created = contentService.createDraft(new CreateContentRequest("user-4", "channel-content-4", "Not ready",
+				"Draft", ContentType.VIDEO, ContentVisibility.PRIVATE));
+
+		ApiException exception = assertThrows(ApiException.class, () -> contentService.publish(created.id(), "user-4"));
+		assertEquals("CONTENT_NOT_READY_FOR_PUBLISH", exception.getCode());
+	}
+
+	@Test
+	void unpublishMovesPublishedContentToPrivateState() {
+		ChannelEntity channel = saveChannel("channel-content-5", "content-channel-five");
+		saveMembership(channel, "user-5", ChannelMemberRole.ADMIN);
+		var created = contentService.createDraft(new CreateContentRequest("user-5", "channel-content-5", "Ready",
+				"Desc", ContentType.VIDEO, ContentVisibility.UNLISTED));
+
+		ContentEntity entity = contentRepository.findById(created.id()).orElseThrow();
+		entity.setPlaybackReady(true);
+		entity.setState(ContentState.PUBLISHED);
+		entity.setPublishedAt(LocalDateTime.now().minusHours(1));
+		contentRepository.saveAndFlush(entity);
+
+		var unpublished = contentService.unpublish(created.id(), "user-5");
+
+		assertEquals(ContentState.PRIVATE, unpublished.state());
+		assertNotNull(unpublished.publishedAt());
+		assertEquals(ContentVisibility.UNLISTED, unpublished.visibility());
 	}
 
 	private ChannelEntity saveChannel(String id, String slug) {

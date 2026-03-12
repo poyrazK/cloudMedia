@@ -83,7 +83,8 @@ class ContentControllerWebMvcTest {
 	void updateMetadataReturnsUpdatedContent() throws Exception {
 		ChannelEntity channel = saveChannel("channel-3", "gamma-channel");
 		saveMembership(channel, "user-3", ChannelMemberRole.ADMIN);
-		ContentEntity content = saveContent(channel, "Old title", "Old description", ContentVisibility.PRIVATE);
+		ContentEntity content = saveContent(channel, "Old title", "Old description", ContentVisibility.PRIVATE,
+				ContentState.DRAFT, false, null);
 
 		mockMvc.perform(patch("/v1/content/" + content.getId()).contentType(MediaType.APPLICATION_JSON).content("""
 				{
@@ -110,7 +111,8 @@ class ContentControllerWebMvcTest {
 	@Test
 	void updateMetadataReturnsForbiddenForNonMember() throws Exception {
 		ChannelEntity channel = saveChannel("channel-4", "delta-channel");
-		ContentEntity content = saveContent(channel, "Title", "Description", ContentVisibility.PRIVATE);
+		ContentEntity content = saveContent(channel, "Title", "Description", ContentVisibility.PRIVATE,
+				ContentState.DRAFT, false, null);
 
 		mockMvc.perform(patch("/v1/content/" + content.getId()).contentType(MediaType.APPLICATION_JSON).content("""
 				{
@@ -128,6 +130,71 @@ class ContentControllerWebMvcTest {
 				  "userId": "user-1"
 				}
 				""")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+	}
+
+	@Test
+	void publishReturnsPublishedContentWhenReady() throws Exception {
+		ChannelEntity channel = saveChannel("channel-5", "epsilon-channel");
+		saveMembership(channel, "user-5", ChannelMemberRole.OWNER);
+		ContentEntity content = saveContent(channel, "Publish me", "Ready", ContentVisibility.PUBLIC,
+				ContentState.DRAFT, true, null);
+
+		mockMvc.perform(
+				post("/v1/content/" + content.getId() + "/publish").contentType(MediaType.APPLICATION_JSON).content("""
+						{
+						  "userId": "user-5"
+						}
+						""")).andExpect(status().isOk()).andExpect(jsonPath("$.data.id").value(content.getId()))
+				.andExpect(jsonPath("$.data.state").value("PUBLISHED"))
+				.andExpect(jsonPath("$.data.publishedAt").exists());
+	}
+
+	@Test
+	void publishReturnsConflictWhenNotPlaybackReady() throws Exception {
+		ChannelEntity channel = saveChannel("channel-6", "zeta-channel");
+		saveMembership(channel, "user-6", ChannelMemberRole.OWNER);
+		ContentEntity content = saveContent(channel, "Not ready", "Wait", ContentVisibility.PRIVATE, ContentState.DRAFT,
+				false, null);
+
+		mockMvc.perform(
+				post("/v1/content/" + content.getId() + "/publish").contentType(MediaType.APPLICATION_JSON).content("""
+						{
+						  "userId": "user-6"
+						}
+						""")).andExpect(status().isConflict())
+				.andExpect(jsonPath("$.error.code").value("CONTENT_NOT_READY_FOR_PUBLISH"));
+	}
+
+	@Test
+	void unpublishReturnsPrivateStateForPublishedContent() throws Exception {
+		ChannelEntity channel = saveChannel("channel-7", "eta-channel");
+		saveMembership(channel, "user-7", ChannelMemberRole.ADMIN);
+		ContentEntity content = saveContent(channel, "Published", "Visible", ContentVisibility.PUBLIC,
+				ContentState.PUBLISHED, true, LocalDateTime.now().minusDays(1));
+
+		mockMvc.perform(post("/v1/content/" + content.getId() + "/unpublish").contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+						  "userId": "user-7"
+						}
+						""")).andExpect(status().isOk()).andExpect(jsonPath("$.data.id").value(content.getId()))
+				.andExpect(jsonPath("$.data.state").value("PRIVATE"));
+	}
+
+	@Test
+	void unpublishReturnsConflictWhenNotPublished() throws Exception {
+		ChannelEntity channel = saveChannel("channel-8", "theta-channel");
+		saveMembership(channel, "user-8", ChannelMemberRole.ADMIN);
+		ContentEntity content = saveContent(channel, "Draft", "Not public", ContentVisibility.PRIVATE,
+				ContentState.DRAFT, false, null);
+
+		mockMvc.perform(post("/v1/content/" + content.getId() + "/unpublish").contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+						  "userId": "user-8"
+						}
+						""")).andExpect(status().isConflict())
+				.andExpect(jsonPath("$.error.code").value("CONTENT_NOT_PUBLISHED"));
 	}
 
 	private ChannelEntity saveChannel(String id, String slug) {
@@ -152,19 +219,19 @@ class ContentControllerWebMvcTest {
 	}
 
 	private ContentEntity saveContent(ChannelEntity channel, String title, String description,
-			ContentVisibility visibility) {
+			ContentVisibility visibility, ContentState state, boolean playbackReady, LocalDateTime publishedAt) {
 		ContentEntity content = new ContentEntity();
 		content.setId(UUID.randomUUID().toString());
 		content.setChannel(channel);
 		content.setTitle(title);
 		content.setDescription(description);
 		content.setContentType(ContentType.VIDEO);
-		content.setState(ContentState.DRAFT);
+		content.setState(state);
 		content.setVisibility(visibility);
-		content.setPlaybackReady(false);
+		content.setPlaybackReady(playbackReady);
 		content.setCreatedAt(LocalDateTime.now());
 		content.setUpdatedAt(LocalDateTime.now());
-		content.setPublishedAt(null);
+		content.setPublishedAt(publishedAt);
 		return contentRepository.saveAndFlush(content);
 	}
 }

@@ -77,6 +77,12 @@ This document defines the MVP API contract groups, standards, and core request/r
 
 ### `POST /v1/content`
 - Creates content metadata record in draft state
+- Request fields (MVP): `userId`, `channelId`, `title`, `description`, `contentType`, optional `visibility`
+- Default behavior: `state=DRAFT`, `playbackReady=false`, `publishedAt=null`, `visibility=PRIVATE` when omitted
+
+### `PATCH /v1/content/{content_id}`
+- Partially updates content metadata for channel members
+- Mutable fields (MVP): `title`, `description`, `visibility`
 
 ### `POST /v1/content/{content_id}/publish`
 - Idempotent publish request

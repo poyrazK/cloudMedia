@@ -478,10 +478,13 @@ Current completed slices:
   - explicit channel create endpoint with owner membership assignment
   - channel lookup by id and slug
   - user channel listing endpoint
+- Content-service draft/update metadata APIs are implemented:
+  - `POST /v1/content` creates content in `DRAFT`
+  - `PATCH /v1/content/{content_id}` updates metadata fields
+  - channel membership checks enforced for create/update
 
 Next active slice:
 
 - Content-service API foundation:
-  - content draft/update endpoints
   - publish/unpublish lifecycle endpoints
   - publish guard requiring playable renditions readiness

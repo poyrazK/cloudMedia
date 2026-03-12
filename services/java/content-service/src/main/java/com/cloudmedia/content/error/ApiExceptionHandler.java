@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -46,6 +47,13 @@ public class ApiExceptionHandler {
 		ApiErrorResponse response = new ApiErrorResponse(
 				new ApiError(exception.getCode(), exception.getMessage(), Map.of()), responseMeta);
 		return ResponseEntity.status(exception.getStatus()).body(response);
+	}
+
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<ApiErrorResponse> handleUnreadableBody(HttpMessageNotReadableException exception) {
+		ApiErrorResponse response = new ApiErrorResponse(
+				new ApiError("VALIDATION_ERROR", "Malformed request body", Map.of()), meta());
+		return ResponseEntity.badRequest().body(response);
 	}
 
 	@ExceptionHandler(Exception.class)

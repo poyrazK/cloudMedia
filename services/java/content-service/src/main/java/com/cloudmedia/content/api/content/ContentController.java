@@ -1,6 +1,7 @@
 package com.cloudmedia.content.api.content;
 
 import com.cloudmedia.content.api.content.dto.ContentResponse;
+import com.cloudmedia.content.api.content.dto.ContentActionRequest;
 import com.cloudmedia.content.api.content.dto.CreateContentRequest;
 import com.cloudmedia.content.api.content.dto.UpdateContentRequest;
 import com.cloudmedia.content.api.response.ApiMeta;
@@ -44,6 +45,22 @@ public class ContentController {
 			@PathVariable("contentId") @NotBlank String contentId, @Valid @RequestBody UpdateContentRequest request,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
 		ContentResponse response = contentService.updateMetadata(contentId, request);
+		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
+	}
+
+	@PostMapping("/content/{contentId}/publish")
+	public ResponseEntity<ApiSuccessResponse<ContentResponse>> publishContent(
+			@PathVariable("contentId") @NotBlank String contentId, @Valid @RequestBody ContentActionRequest request,
+			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
+		ContentResponse response = contentService.publish(contentId, request.userId());
+		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
+	}
+
+	@PostMapping("/content/{contentId}/unpublish")
+	public ResponseEntity<ApiSuccessResponse<ContentResponse>> unpublishContent(
+			@PathVariable("contentId") @NotBlank String contentId, @Valid @RequestBody ContentActionRequest request,
+			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
+		ContentResponse response = contentService.unpublish(contentId, request.userId());
 		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
 	}
 

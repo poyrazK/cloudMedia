@@ -87,6 +87,11 @@ This document defines the MVP API contract groups, standards, and core request/r
 ### `POST /v1/content/{content_id}/publish`
 - Idempotent publish request
 - Enforces moderation/policy preconditions
+- Enforces playback-ready guard before transition to `PUBLISHED`
+
+### `POST /v1/content/{content_id}/unpublish`
+- Unpublishes previously published content
+- Transition target (MVP): `PRIVATE`
 
 ### `GET /v1/content/{content_id}/playback`
 - Returns signed manifest URL and available renditions

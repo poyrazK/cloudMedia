@@ -74,6 +74,48 @@ public class ContentService {
 		return toResponse(contentRepository.save(content));
 	}
 
+	@Transactional
+	public ContentResponse publish(String contentId, String userId) {
+		ContentEntity content = contentRepository.findById(contentId).orElseThrow(
+				() -> new ApiException(HttpStatus.NOT_FOUND, "CONTENT_NOT_FOUND", "Content not found", null));
+		assertMember(content.getChannel().getId(), userId);
+
+		if (content.getState() == ContentState.REMOVED) {
+			throw new ApiException(HttpStatus.CONFLICT, "CONTENT_REMOVED", "Removed content cannot be published", null);
+		}
+		if (content.getState() == ContentState.PUBLISHED) {
+			return toResponse(content);
+		}
+		if (!content.isPlaybackReady()) {
+			throw new ApiException(HttpStatus.CONFLICT, "CONTENT_NOT_READY_FOR_PUBLISH",
+					"Content is not playback ready", null);
+		}
+
+		LocalDateTime now = LocalDateTime.now();
+		content.setState(ContentState.PUBLISHED);
+		if (content.getPublishedAt() == null) {
+			content.setPublishedAt(now);
+		}
+		content.setUpdatedAt(now);
+		return toResponse(contentRepository.save(content));
+	}
+
+	@Transactional
+	public ContentResponse unpublish(String contentId, String userId) {
+		ContentEntity content = contentRepository.findById(contentId).orElseThrow(
+				() -> new ApiException(HttpStatus.NOT_FOUND, "CONTENT_NOT_FOUND", "Content not found", null));
+		assertMember(content.getChannel().getId(), userId);
+
+		if (content.getState() != ContentState.PUBLISHED) {
+			throw new ApiException(HttpStatus.CONFLICT, "CONTENT_NOT_PUBLISHED",
+					"Only published content can be unpublished", null);
+		}
+
+		content.setState(ContentState.PRIVATE);
+		content.setUpdatedAt(LocalDateTime.now());
+		return toResponse(contentRepository.save(content));
+	}
+
 	private void assertMember(String channelId, String userId) {
 		if (channelMemberRepository.findByChannel_IdAndUserId(channelId, userId).isEmpty()) {
 			throw new ApiException(HttpStatus.FORBIDDEN, "CHANNEL_ACCESS_DENIED", "User is not a member of the channel",

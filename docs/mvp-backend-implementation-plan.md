@@ -482,9 +482,13 @@ Current completed slices:
   - `POST /v1/content` creates content in `DRAFT`
   - `PATCH /v1/content/{content_id}` updates metadata fields
   - channel membership checks enforced for create/update
+- Content-service publish lifecycle APIs are implemented:
+  - `POST /v1/content/{content_id}/publish` enforces playback-ready guard
+  - `POST /v1/content/{content_id}/unpublish` transitions content to `PRIVATE`
+  - publish/unpublish channel membership checks are enforced
 
 Next active slice:
 
 - Content-service API foundation:
-  - publish/unpublish lifecycle endpoints
-  - publish guard requiring playable renditions readiness
+  - playback endpoint policy and manifest response wiring
+  - content lifecycle event publishing (`content.published`, `content.unpublished`)

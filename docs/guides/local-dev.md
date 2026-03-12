@@ -1,6 +1,6 @@
 # Local Development Guide
 
-Run the full CloudMedia backend stack locally with Docker Compose.
+Run the backend local infrastructure with Docker Compose. Spring local profiles currently wire Postgres, while Kafka and Redis are started and ready for service integrations.
 
 ## Prerequisites
 
@@ -12,7 +12,7 @@ Run the full CloudMedia backend stack locally with Docker Compose.
 
 ```bash
 # 1. Start infrastructure (Postgres, Kafka, Redis)
-./scripts/dev/start.sh
+make dev-up
 
 # 2. Run a service against local infra
 cd services/java
@@ -41,7 +41,7 @@ The service will boot, Flyway will run migrations, and the API will be available
 
 ## Running Each Service
 
-All services use the `local` Spring profile to connect to Docker infrastructure:
+All services use the `local` Spring profile to connect to local Postgres in Docker (Kafka and Redis containers are also available):
 
 ```bash
 cd services/java
@@ -77,6 +77,8 @@ curl http://localhost:8081/actuator/health
 | `scripts/dev/stop.sh`    | Stop containers (data is preserved)             |
 | `scripts/dev/reset.sh`   | Stop containers AND delete all data (clean slate) |
 
+`make dev-up`, `make dev-down`, and `make dev-reset` are convenience wrappers around these scripts.
+
 ## Customizing Ports
 
 Copy `.env.example` to `.env` and edit to change default ports:
@@ -109,8 +111,8 @@ Change the conflicting port in `.env` and restart:
 ```bash
 # Example: Postgres on 5433 instead of 5432
 echo "POSTGRES_PORT=5433" >> .env
-./scripts/dev/stop.sh
-./scripts/dev/start.sh
+make dev-down
+make dev-up
 ```
 
 Update the corresponding `application-local.yml` or set the env var:
@@ -124,8 +126,8 @@ POSTGRES_PORT=5433 SPRING_PROFILES_ACTIVE=local mvn -pl identity-service -am spr
 After `scripts/dev/reset.sh`, databases are recreated empty. Flyway will re-run all migrations on next service start. If you see migration checksum errors, reset the data:
 
 ```bash
-./scripts/dev/reset.sh
-./scripts/dev/start.sh
+make dev-reset
+make dev-up
 ```
 
 ### Container keeps restarting

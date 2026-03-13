@@ -2,6 +2,7 @@ package com.cloudmedia.content.api.content;
 
 import com.cloudmedia.content.api.content.dto.ContentResponse;
 import com.cloudmedia.content.api.content.dto.ContentActionRequest;
+import com.cloudmedia.content.api.content.dto.PlaybackResponse;
 import com.cloudmedia.content.api.content.dto.CreateContentRequest;
 import com.cloudmedia.content.api.content.dto.UpdateContentRequest;
 import com.cloudmedia.content.api.response.ApiMeta;
@@ -13,6 +14,7 @@ import java.time.Instant;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -61,6 +63,14 @@ public class ContentController {
 			@PathVariable("contentId") @NotBlank String contentId, @Valid @RequestBody ContentActionRequest request,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
 		ContentResponse response = contentService.unpublish(contentId, request.userId());
+		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
+	}
+
+	@GetMapping("/content/{contentId}/playback")
+	public ResponseEntity<ApiSuccessResponse<PlaybackResponse>> getPlayback(
+			@PathVariable("contentId") @NotBlank String contentId,
+			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
+		PlaybackResponse response = contentService.getPlayback(contentId);
 		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
 	}
 

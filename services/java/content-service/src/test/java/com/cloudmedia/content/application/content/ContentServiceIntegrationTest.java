@@ -129,6 +129,55 @@ class ContentServiceIntegrationTest {
 		assertEquals(ContentVisibility.UNLISTED, unpublished.visibility());
 	}
 
+	@Test
+	void getPlaybackReturnsManifestAndRenditionsForPublishedReadyContent() {
+		ChannelEntity channel = saveChannel("channel-content-6", "content-channel-six");
+		saveMembership(channel, "user-6", ChannelMemberRole.OWNER);
+		var created = contentService.createDraft(new CreateContentRequest("user-6", "channel-content-6", "Playable",
+				"Desc", ContentType.VIDEO, ContentVisibility.PUBLIC));
+
+		ContentEntity entity = contentRepository.findById(created.id()).orElseThrow();
+		entity.setPlaybackReady(true);
+		entity.setState(ContentState.PUBLISHED);
+		entity.setPublishedAt(LocalDateTime.now().minusMinutes(10));
+		contentRepository.saveAndFlush(entity);
+
+		var playback = contentService.getPlayback(created.id());
+
+		assertEquals(created.id(), playback.contentId());
+		assertEquals("https://playback.cloudmedia.local/content/" + created.id() + "/master.m3u8",
+				playback.manifestUrl());
+		assertTrue(playback.playbackReady());
+		assertEquals(2, playback.availableRenditions().size());
+	}
+
+	@Test
+	void getPlaybackRejectsDraftContent() {
+		ChannelEntity channel = saveChannel("channel-content-7", "content-channel-seven");
+		saveMembership(channel, "user-7", ChannelMemberRole.OWNER);
+		var created = contentService.createDraft(new CreateContentRequest("user-7", "channel-content-7", "Draft",
+				"Desc", ContentType.VIDEO, ContentVisibility.PRIVATE));
+
+		ApiException exception = assertThrows(ApiException.class, () -> contentService.getPlayback(created.id()));
+		assertEquals("CONTENT_NOT_PLAYABLE", exception.getCode());
+	}
+
+	@Test
+	void getPlaybackRejectsPublishedContentThatIsNotReady() {
+		ChannelEntity channel = saveChannel("channel-content-8", "content-channel-eight");
+		saveMembership(channel, "user-8", ChannelMemberRole.OWNER);
+		var created = contentService.createDraft(new CreateContentRequest("user-8", "channel-content-8", "Pending",
+				"Desc", ContentType.VIDEO, ContentVisibility.PUBLIC));
+
+		ContentEntity entity = contentRepository.findById(created.id()).orElseThrow();
+		entity.setState(ContentState.PUBLISHED);
+		entity.setPublishedAt(LocalDateTime.now().minusMinutes(5));
+		contentRepository.saveAndFlush(entity);
+
+		ApiException exception = assertThrows(ApiException.class, () -> contentService.getPlayback(created.id()));
+		assertEquals("CONTENT_NOT_PLAYBACK_READY", exception.getCode());
+	}
+
 	private ChannelEntity saveChannel(String id, String slug) {
 		ChannelEntity channel = new ChannelEntity();
 		channel.setId(id);

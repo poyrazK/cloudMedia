@@ -20,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -195,6 +196,41 @@ class ContentControllerWebMvcTest {
 						}
 						""")).andExpect(status().isConflict())
 				.andExpect(jsonPath("$.error.code").value("CONTENT_NOT_PUBLISHED"));
+	}
+
+	@Test
+	void getPlaybackReturnsManifestForPublishedReadyContent() throws Exception {
+		ChannelEntity channel = saveChannel("channel-9", "iota-channel");
+		ContentEntity content = saveContent(channel, "Playable", "Ready to stream", ContentVisibility.PUBLIC,
+				ContentState.PUBLISHED, true, LocalDateTime.now().minusMinutes(5));
+
+		mockMvc.perform(get("/v1/content/" + content.getId() + "/playback").header("X-Request-Id", "req_playback_1"))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.data.contentId").value(content.getId()))
+				.andExpect(jsonPath("$.data.manifestUrl")
+						.value("https://playback.cloudmedia.local/content/" + content.getId() + "/master.m3u8"))
+				.andExpect(jsonPath("$.data.playbackReady").value(true))
+				.andExpect(jsonPath("$.data.availableRenditions[0].name").value("sd"))
+				.andExpect(jsonPath("$.meta.requestId").value("req_playback_1"));
+	}
+
+	@Test
+	void getPlaybackRejectsNonPublishedContent() throws Exception {
+		ChannelEntity channel = saveChannel("channel-10", "kappa-channel");
+		ContentEntity content = saveContent(channel, "Draft", "Not public", ContentVisibility.PRIVATE,
+				ContentState.DRAFT, true, null);
+
+		mockMvc.perform(get("/v1/content/" + content.getId() + "/playback")).andExpect(status().isConflict())
+				.andExpect(jsonPath("$.error.code").value("CONTENT_NOT_PLAYABLE"));
+	}
+
+	@Test
+	void getPlaybackRejectsPublishedContentThatIsNotReady() throws Exception {
+		ChannelEntity channel = saveChannel("channel-11", "lambda-channel");
+		ContentEntity content = saveContent(channel, "Pending", "Not ready", ContentVisibility.PUBLIC,
+				ContentState.PUBLISHED, false, LocalDateTime.now().minusMinutes(1));
+
+		mockMvc.perform(get("/v1/content/" + content.getId() + "/playback")).andExpect(status().isConflict())
+				.andExpect(jsonPath("$.error.code").value("CONTENT_NOT_PLAYBACK_READY"));
 	}
 
 	private ChannelEntity saveChannel(String id, String slug) {

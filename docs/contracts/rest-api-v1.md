@@ -95,6 +95,8 @@ This document defines the MVP API contract groups, standards, and core request/r
 
 ### `GET /v1/content/{content_id}/playback`
 - Returns signed manifest URL and available renditions
+- MVP gate: only `PUBLISHED` content with `playbackReady=true` is playable
+- Response includes placeholder manifest URL plus derived rendition metadata
 - Applies age/geo/moderation checks
 
 ## 4) Social

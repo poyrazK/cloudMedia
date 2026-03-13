@@ -486,9 +486,12 @@ Current completed slices:
   - `POST /v1/content/{content_id}/publish` enforces playback-ready guard
   - `POST /v1/content/{content_id}/unpublish` transitions content to `PRIVATE`
   - publish/unpublish channel membership checks are enforced
+- Content-service playback API is implemented:
+  - `GET /v1/content/{content_id}/playback` returns manifest and rendition metadata
+  - playback is currently limited to `PUBLISHED` content with `playbackReady=true`
+  - manifest URL generation uses a placeholder local playback host until storage signing is wired
 
 Next active slice:
 
 - Content-service API foundation:
-  - playback endpoint policy and manifest response wiring
   - content lifecycle event publishing (`content.published`, `content.unpublished`)

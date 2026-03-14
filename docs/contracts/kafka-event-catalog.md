@@ -101,6 +101,43 @@ All events must use this envelope:
 }
 ```
 
+### `content.created` payload
+
+```json
+{
+  "content_id": "cnt_123",
+  "channel_id": "chn_123",
+  "title": "My draft",
+  "content_type": "VIDEO",
+  "visibility": "PRIVATE",
+  "state": "DRAFT"
+}
+```
+
+### `content.updated` payload
+
+```json
+{
+  "content_id": "cnt_123",
+  "channel_id": "chn_123",
+  "title": "Updated title",
+  "content_type": "VIDEO",
+  "visibility": "UNLISTED"
+}
+```
+
+### `content.unpublished` payload
+
+```json
+{
+  "content_id": "cnt_123",
+  "channel_id": "chn_123",
+  "previous_state": "PUBLISHED",
+  "current_state": "PRIVATE",
+  "published_at": "2026-03-09T12:00:00Z"
+}
+```
+
 ### `policy.changed` payload
 
 ```json

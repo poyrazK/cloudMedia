@@ -1,13 +1,16 @@
 package com.cloudmedia.discovery.events;
 
 import com.cloudmedia.discovery.search.SearchDocument;
+import com.cloudmedia.discovery.search.SearchDocumentUpdate;
 import com.cloudmedia.discovery.search.SearchIndexWriter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ContentIndexEventListenerTest {
@@ -49,10 +52,11 @@ class ContentIndexEventListenerTest {
 		assertEquals(1, searchIndexWriter.upserts.size());
 		assertEquals("cnt_1", searchIndexWriter.upserts.getFirst().contentId());
 		assertEquals("Published description", searchIndexWriter.upserts.getFirst().description());
+		assertEquals(Instant.parse("2026-03-14T12:00:00Z"), searchIndexWriter.upserts.getFirst().publishedAt());
 	}
 
 	@Test
-	void updatedEventUpsertsSearchDocument() {
+	void updatedEventIssuesPartialUpdate() {
 		listener.handle("""
 				{
 				  "eventId": "evt_2",
@@ -73,9 +77,10 @@ class ContentIndexEventListenerTest {
 				}
 				""");
 
-		assertEquals(1, searchIndexWriter.upserts.size());
-		assertEquals("cnt_2", searchIndexWriter.upserts.getFirst().contentId());
-		assertEquals("Updated title", searchIndexWriter.upserts.getFirst().title());
+		assertEquals(0, searchIndexWriter.upserts.size());
+		assertEquals(1, searchIndexWriter.updates.size());
+		assertEquals("cnt_2", searchIndexWriter.updates.getFirst().contentId());
+		assertEquals("Updated title", searchIndexWriter.updates.getFirst().update().title());
 	}
 
 	@Test
@@ -103,9 +108,33 @@ class ContentIndexEventListenerTest {
 		assertEquals(List.of("cnt_3"), searchIndexWriter.deletes);
 	}
 
+	@Test
+	void invalidJsonThrowsIllegalArgumentException() {
+		assertThrows(IllegalArgumentException.class, () -> listener.handle("not valid json"));
+	}
+
+	@Test
+	void unknownEventTypeThrowsIllegalArgumentException() {
+		assertThrows(IllegalArgumentException.class, () -> listener.handle("""
+				{
+				  "eventId": "evt_4",
+				  "eventType": "content.unknown",
+				  "eventVersion": 1,
+				  "occurredAt": "2026-03-14T12:00:00Z",
+				  "producer": "content-service",
+				  "entityType": "content",
+				  "entityId": "cnt_4",
+				  "traceId": "req_4",
+				  "payload": {}
+				}
+				"""));
+	}
+
 	static class RecordingSearchIndexWriter implements SearchIndexWriter {
 
 		private final List<SearchDocument> upserts = new ArrayList<>();
+
+		private final List<UpdateCall> updates = new ArrayList<>();
 
 		private final List<String> deletes = new ArrayList<>();
 
@@ -115,13 +144,22 @@ class ContentIndexEventListenerTest {
 		}
 
 		@Override
+		public void update(String contentId, SearchDocumentUpdate update) {
+			updates.add(new UpdateCall(contentId, update));
+		}
+
+		@Override
 		public void delete(String contentId) {
 			deletes.add(contentId);
 		}
 
 		void clear() {
 			upserts.clear();
+			updates.clear();
 			deletes.clear();
 		}
+	}
+
+	record UpdateCall(String contentId, SearchDocumentUpdate update) {
 	}
 }

@@ -1,5 +1,8 @@
 # Build outputs
 target/
 
+# Local environment
+.env
+
 # OS artifacts
 .DS_Store

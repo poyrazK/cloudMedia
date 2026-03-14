@@ -485,6 +485,7 @@ Current completed slices:
 
 Next active slice:
 
-- Content-service API foundation:
-  - publish/unpublish lifecycle endpoints
-  - publish guard requiring playable renditions readiness
+- Discovery-service indexing foundation:
+  - consume `content.published`, `content.updated`, and `content.unpublished`
+  - translate lifecycle events into derived index upsert/delete operations
+  - keep OpenSearch writes behind a noop-safe writer abstraction

@@ -493,10 +493,13 @@ Current completed slices:
 - Content-service lifecycle event foundation is implemented:
   - emits `content.created`, `content.updated`, `content.published`, and `content.unpublished`
   - events use the documented envelope with `trace_id` propagation from request handling
-  - current publisher is an internal abstraction with noop transport until Kafka wiring lands
+- Content-service Kafka publisher transport is implemented:
+  - Kafka transport is enabled behind the existing `ContentEventPublisher` abstraction
+  - request flow now fails if Kafka publication fails, avoiding silent DB/event drift
+  - noop fallback remains available when Kafka publishing is disabled
 
 Next active slice:
 
 - Content-service API foundation:
-  - Kafka-backed content lifecycle publisher transport
   - `content.ready` emission from the future media processing pipeline
+  - lifecycle publishing reliability hardening via outbox/retry strategy

@@ -23,6 +23,11 @@ All events must use this envelope:
 ## 2) Topic and key strategy
 
 - Topic namespace: `cloudmedia.<domain>.<event>`
+- Current content-service producer topics:
+  - `cloudmedia.content.created`
+  - `cloudmedia.content.updated`
+  - `cloudmedia.content.published`
+  - `cloudmedia.content.unpublished`
 - Partition keys:
   - content events: `content_id`
   - user events: `user_id`

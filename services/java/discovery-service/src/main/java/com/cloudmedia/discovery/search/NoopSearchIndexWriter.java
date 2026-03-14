@@ -9,7 +9,16 @@ public class NoopSearchIndexWriter implements SearchIndexWriter {
 
 	@Override
 	public void upsert(SearchDocument document) {
+		if (document == null) {
+			LOGGER.debug("Noop index writer skipped null upsert document");
+			return;
+		}
 		LOGGER.debug("Noop index writer skipped upsert for contentId={}", document.contentId());
+	}
+
+	@Override
+	public void update(String contentId, SearchDocumentUpdate update) {
+		LOGGER.debug("Noop index writer skipped partial update for contentId={}", contentId);
 	}
 
 	@Override

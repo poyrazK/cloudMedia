@@ -5,6 +5,7 @@ import com.cloudmedia.discovery.search.OpenSearchProperties;
 import com.cloudmedia.discovery.search.OpenSearchSearchIndexWriter;
 import com.cloudmedia.discovery.search.SearchIndexWriter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -29,7 +30,8 @@ public class DiscoveryIndexBridgeConfiguration {
 	@ConditionalOnProperty(prefix = "cloudmedia.discovery.opensearch", name = "enabled", havingValue = "true")
 	OpenSearchSearchIndexWriter openSearchSearchIndexWriter(RestTemplateBuilder restTemplateBuilder,
 			OpenSearchProperties openSearchProperties) {
-		RestTemplate restTemplate = restTemplateBuilder.build();
+		RestTemplate restTemplate = restTemplateBuilder.setConnectTimeout(Duration.ofSeconds(5))
+				.setReadTimeout(Duration.ofSeconds(30)).build();
 		return new OpenSearchSearchIndexWriter(restTemplate, openSearchProperties);
 	}
 

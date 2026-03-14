@@ -51,7 +51,7 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 - Balanced feed endpoint (followed + trending + fresh + similar).
 
 ### PR-008: OpenSearch integration
-- Kafka consumers for index upsert/delete events.
+- Kafka consumers in discovery-service for content lifecycle indexing.
 - `/v1/search` and `/v1/search/autocomplete` endpoints.
 
 ### PR-009: livestream and chat foundation

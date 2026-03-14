@@ -3,6 +3,18 @@ spring:
     name: content-service
   jpa:
     open-in-view: false
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+cloudmedia:
+  events:
+    kafka:
+      enabled: false
+      topic-prefix: cloudmedia.content
 
 server:
   port: 8082

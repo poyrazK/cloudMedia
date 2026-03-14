@@ -1,6 +1,24 @@
 spring:
   application:
     name: discovery-service
+  kafka:
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+cloudmedia:
+  discovery:
+    kafka:
+      enabled: false
+      group-id: discovery-indexer-v1
+      topics:
+        content-published: cloudmedia.content.published
+        content-updated: cloudmedia.content.updated
+        content-unpublished: cloudmedia.content.unpublished
+    opensearch:
+      enabled: false
+      base-url: http://localhost:9200
+      index-alias: content-read
 
 server:
   port: 8085

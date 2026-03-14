@@ -1,12 +1,17 @@
 package com.cloudmedia.discovery.events;
 
 import com.cloudmedia.discovery.search.SearchDocument;
+import com.cloudmedia.discovery.search.SearchDocumentUpdate;
 import com.cloudmedia.discovery.search.SearchIndexWriter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 
 public class ContentIndexEventListener {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ContentIndexEventListener.class);
 
 	private final ObjectMapper objectMapper;
 
@@ -25,7 +30,10 @@ public class ContentIndexEventListener {
 		ContentEventEnvelope envelope = readEnvelope(rawEvent);
 		switch (envelope.eventType()) {
 			case "content.published" -> searchIndexWriter.upsert(toPublishedDocument(envelope));
-			case "content.updated" -> searchIndexWriter.upsert(toUpdatedDocument(envelope));
+			case "content.updated" -> {
+				ContentUpdatedPayload payload = readPayload(envelope, ContentUpdatedPayload.class);
+				searchIndexWriter.update(payload.contentId(), toUpdatedDocument(payload));
+			}
 			case "content.unpublished" ->
 				searchIndexWriter.delete(readPayload(envelope, ContentUnpublishedPayload.class).contentId());
 			default -> throw new IllegalArgumentException("Unsupported content event type " + envelope.eventType());
@@ -36,6 +44,7 @@ public class ContentIndexEventListener {
 		try {
 			return objectMapper.readValue(rawEvent, ContentEventEnvelope.class);
 		} catch (JsonProcessingException exception) {
+			LOGGER.warn("Failed to parse content event envelope rawEvent={}", truncate(rawEvent), exception);
 			throw new IllegalArgumentException("Failed to parse content event envelope", exception);
 		}
 	}
@@ -43,16 +52,23 @@ public class ContentIndexEventListener {
 	private SearchDocument toPublishedDocument(ContentEventEnvelope envelope) {
 		ContentPublishedPayload payload = readPayload(envelope, ContentPublishedPayload.class);
 		return new SearchDocument(payload.contentId(), payload.channelId(), payload.title(), payload.description(),
-				payload.contentType(), payload.visibility(), payload.publishedAt());
+				payload.contentType(), payload.visibility(),
+				payload.publishedAt().atOffset(java.time.ZoneOffset.UTC).toInstant());
 	}
 
-	private SearchDocument toUpdatedDocument(ContentEventEnvelope envelope) {
-		ContentUpdatedPayload payload = readPayload(envelope, ContentUpdatedPayload.class);
-		return new SearchDocument(payload.contentId(), payload.channelId(), payload.title(), null,
-				payload.contentType(), payload.visibility(), null);
+	private SearchDocumentUpdate toUpdatedDocument(ContentUpdatedPayload payload) {
+		return new SearchDocumentUpdate(payload.channelId(), payload.title(), null, payload.contentType(),
+				payload.visibility());
 	}
 
 	private <T> T readPayload(ContentEventEnvelope envelope, Class<T> payloadType) {
 		return objectMapper.convertValue(envelope.payload(), payloadType);
+	}
+
+	private String truncate(String rawEvent) {
+		if (rawEvent == null) {
+			return "null";
+		}
+		return rawEvent.length() <= 200 ? rawEvent : rawEvent.substring(0, 200) + "...";
 	}
 }

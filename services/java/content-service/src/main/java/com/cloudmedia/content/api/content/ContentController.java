@@ -38,32 +38,36 @@ public class ContentController {
 	public ResponseEntity<ApiSuccessResponse<ContentResponse>> createContentDraft(
 			@Valid @RequestBody CreateContentRequest request,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
-		ContentResponse response = contentService.createDraft(request);
-		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
+		String effectiveRequestId = requestId(requestId);
+		ContentResponse response = contentService.createDraft(request, effectiveRequestId);
+		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(effectiveRequestId)));
 	}
 
 	@PatchMapping("/content/{contentId}")
 	public ResponseEntity<ApiSuccessResponse<ContentResponse>> updateContentMetadata(
 			@PathVariable("contentId") @NotBlank String contentId, @Valid @RequestBody UpdateContentRequest request,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
-		ContentResponse response = contentService.updateMetadata(contentId, request);
-		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
+		String effectiveRequestId = requestId(requestId);
+		ContentResponse response = contentService.updateMetadata(contentId, request, effectiveRequestId);
+		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(effectiveRequestId)));
 	}
 
 	@PostMapping("/content/{contentId}/publish")
 	public ResponseEntity<ApiSuccessResponse<ContentResponse>> publishContent(
 			@PathVariable("contentId") @NotBlank String contentId, @Valid @RequestBody ContentActionRequest request,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
-		ContentResponse response = contentService.publish(contentId, request.userId());
-		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
+		String effectiveRequestId = requestId(requestId);
+		ContentResponse response = contentService.publish(contentId, request.userId(), effectiveRequestId);
+		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(effectiveRequestId)));
 	}
 
 	@PostMapping("/content/{contentId}/unpublish")
 	public ResponseEntity<ApiSuccessResponse<ContentResponse>> unpublishContent(
 			@PathVariable("contentId") @NotBlank String contentId, @Valid @RequestBody ContentActionRequest request,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
-		ContentResponse response = contentService.unpublish(contentId, request.userId());
-		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
+		String effectiveRequestId = requestId(requestId);
+		ContentResponse response = contentService.unpublish(contentId, request.userId(), effectiveRequestId);
+		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(effectiveRequestId)));
 	}
 
 	@GetMapping("/content/{contentId}/playback")
@@ -75,9 +79,13 @@ public class ContentController {
 	}
 
 	private ApiMeta meta(String requestIdHeader) {
+		return new ApiMeta(requestId(requestIdHeader), Instant.now());
+	}
+
+	private String requestId(String requestIdHeader) {
 		String requestId = requestIdHeader != null && !requestIdHeader.isBlank()
 				? requestIdHeader
 				: "req_" + UUID.randomUUID();
-		return new ApiMeta(requestId, Instant.now());
+		return requestId;
 	}
 }

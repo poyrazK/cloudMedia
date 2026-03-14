@@ -5,6 +5,12 @@ import com.cloudmedia.content.api.content.dto.PlaybackResponse;
 import com.cloudmedia.content.api.content.dto.PlaybackRenditionResponse;
 import com.cloudmedia.content.api.content.dto.CreateContentRequest;
 import com.cloudmedia.content.api.content.dto.UpdateContentRequest;
+import com.cloudmedia.content.events.ContentCreatedPayload;
+import com.cloudmedia.content.events.ContentEventEnvelope;
+import com.cloudmedia.content.events.ContentEventPublisher;
+import com.cloudmedia.content.events.ContentPublishedPayload;
+import com.cloudmedia.content.events.ContentUnpublishedPayload;
+import com.cloudmedia.content.events.ContentUpdatedPayload;
 import com.cloudmedia.content.error.ApiException;
 import com.cloudmedia.content.persistence.entity.ChannelEntity;
 import com.cloudmedia.content.persistence.entity.ContentEntity;
@@ -14,6 +20,7 @@ import com.cloudmedia.content.persistence.repository.ChannelMemberRepository;
 import com.cloudmedia.content.persistence.repository.ChannelRepository;
 import com.cloudmedia.content.persistence.repository.ContentRepository;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -26,16 +33,23 @@ public class ContentService {
 	private final ContentRepository contentRepository;
 	private final ChannelRepository channelRepository;
 	private final ChannelMemberRepository channelMemberRepository;
+	private final ContentEventPublisher contentEventPublisher;
 
 	public ContentService(ContentRepository contentRepository, ChannelRepository channelRepository,
-			ChannelMemberRepository channelMemberRepository) {
+			ChannelMemberRepository channelMemberRepository, ContentEventPublisher contentEventPublisher) {
 		this.contentRepository = contentRepository;
 		this.channelRepository = channelRepository;
 		this.channelMemberRepository = channelMemberRepository;
+		this.contentEventPublisher = contentEventPublisher;
 	}
 
 	@Transactional
 	public ContentResponse createDraft(CreateContentRequest request) {
+		return createDraft(request, null);
+	}
+
+	@Transactional
+	public ContentResponse createDraft(CreateContentRequest request, String traceId) {
 		ChannelEntity channel = channelRepository.findById(request.channelId()).orElseThrow(
 				() -> new ApiException(HttpStatus.NOT_FOUND, "CHANNEL_NOT_FOUND", "Channel not found", null));
 		assertMember(request.channelId(), request.userId());
@@ -54,11 +68,21 @@ public class ContentService {
 		content.setUpdatedAt(now);
 		content.setPublishedAt(null);
 
-		return toResponse(contentRepository.save(content));
+		ContentEntity savedContent = contentRepository.save(content);
+		publishEvent("content.created", savedContent.getId(), traceId,
+				new ContentCreatedPayload(savedContent.getId(), savedContent.getChannel().getId(),
+						savedContent.getTitle(), savedContent.getContentType(), savedContent.getVisibility(),
+						savedContent.getState()));
+		return toResponse(savedContent);
 	}
 
 	@Transactional
 	public ContentResponse updateMetadata(String contentId, UpdateContentRequest request) {
+		return updateMetadata(contentId, request, null);
+	}
+
+	@Transactional
+	public ContentResponse updateMetadata(String contentId, UpdateContentRequest request, String traceId) {
 		ContentEntity content = contentRepository.findById(contentId).orElseThrow(
 				() -> new ApiException(HttpStatus.NOT_FOUND, "CONTENT_NOT_FOUND", "Content not found", null));
 		assertMember(content.getChannel().getId(), request.userId());
@@ -74,7 +98,11 @@ public class ContentService {
 		}
 		content.setUpdatedAt(LocalDateTime.now());
 
-		return toResponse(contentRepository.save(content));
+		ContentEntity savedContent = contentRepository.save(content);
+		publishEvent("content.updated", savedContent.getId(), traceId,
+				new ContentUpdatedPayload(savedContent.getId(), savedContent.getChannel().getId(),
+						savedContent.getTitle(), savedContent.getContentType(), savedContent.getVisibility()));
+		return toResponse(savedContent);
 	}
 
 	@Transactional(readOnly = true)
@@ -97,6 +125,11 @@ public class ContentService {
 
 	@Transactional
 	public ContentResponse publish(String contentId, String userId) {
+		return publish(contentId, userId, null);
+	}
+
+	@Transactional
+	public ContentResponse publish(String contentId, String userId, String traceId) {
 		ContentEntity content = contentRepository.findById(contentId).orElseThrow(
 				() -> new ApiException(HttpStatus.NOT_FOUND, "CONTENT_NOT_FOUND", "Content not found", null));
 		assertMember(content.getChannel().getId(), userId);
@@ -118,11 +151,21 @@ public class ContentService {
 			content.setPublishedAt(now);
 		}
 		content.setUpdatedAt(now);
-		return toResponse(contentRepository.save(content));
+		ContentEntity savedContent = contentRepository.save(content);
+		publishEvent("content.published", savedContent.getId(), traceId,
+				new ContentPublishedPayload(savedContent.getId(), savedContent.getChannel().getId(),
+						savedContent.getTitle(), savedContent.getDescription(), savedContent.getContentType(),
+						savedContent.getVisibility(), savedContent.getPublishedAt()));
+		return toResponse(savedContent);
 	}
 
 	@Transactional
 	public ContentResponse unpublish(String contentId, String userId) {
+		return unpublish(contentId, userId, null);
+	}
+
+	@Transactional
+	public ContentResponse unpublish(String contentId, String userId, String traceId) {
 		ContentEntity content = contentRepository.findById(contentId).orElseThrow(
 				() -> new ApiException(HttpStatus.NOT_FOUND, "CONTENT_NOT_FOUND", "Content not found", null));
 		assertMember(content.getChannel().getId(), userId);
@@ -132,9 +175,14 @@ public class ContentService {
 					"Only published content can be unpublished", null);
 		}
 
+		ContentState previousState = content.getState();
 		content.setState(ContentState.PRIVATE);
 		content.setUpdatedAt(LocalDateTime.now());
-		return toResponse(contentRepository.save(content));
+		ContentEntity savedContent = contentRepository.save(content);
+		publishEvent("content.unpublished", savedContent.getId(), traceId,
+				new ContentUnpublishedPayload(savedContent.getId(), savedContent.getChannel().getId(), previousState,
+						savedContent.getState(), savedContent.getPublishedAt()));
+		return toResponse(savedContent);
 	}
 
 	private void assertMember(String channelId, String userId) {
@@ -160,5 +208,10 @@ public class ContentService {
 					new PlaybackRenditionResponse("hd", "1920x1080", "h264-aac"));
 			case MUSIC -> List.of(new PlaybackRenditionResponse("audio", "audio-only", "aac"));
 		};
+	}
+
+	private void publishEvent(String eventType, String entityId, String traceId, Object payload) {
+		contentEventPublisher.publish(new ContentEventEnvelope(UUID.randomUUID().toString(), eventType, 1,
+				Instant.now(), "content-service", "content", entityId, traceId, payload));
 	}
 }

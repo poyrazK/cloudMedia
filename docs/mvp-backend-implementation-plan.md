@@ -490,8 +490,13 @@ Current completed slices:
   - `GET /v1/content/{content_id}/playback` returns manifest and rendition metadata
   - playback is currently limited to `PUBLISHED` content with `playbackReady=true`
   - manifest URL generation uses a placeholder local playback host until storage signing is wired
+- Content-service lifecycle event foundation is implemented:
+  - emits `content.created`, `content.updated`, `content.published`, and `content.unpublished`
+  - events use the documented envelope with `trace_id` propagation from request handling
+  - current publisher is an internal abstraction with noop transport until Kafka wiring lands
 
 Next active slice:
 
 - Content-service API foundation:
-  - content lifecycle event publishing (`content.published`, `content.unpublished`)
+  - Kafka-backed content lifecycle publisher transport
+  - `content.ready` emission from the future media processing pipeline

@@ -32,6 +32,16 @@ class SearchServiceTest {
 		assertEquals(100, reader.size);
 	}
 
+	@Test
+	void searchClampsNonPositiveSize() {
+		RecordingSearchIndexReader reader = new RecordingSearchIndexReader();
+		SearchService service = new SearchService(reader);
+
+		service.search("video", 1, 0);
+
+		assertEquals(SearchService.MIN_SIZE, reader.size);
+	}
+
 	static class RecordingSearchIndexReader implements SearchIndexReader {
 
 		private String query;

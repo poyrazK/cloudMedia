@@ -1,8 +1,11 @@
 package com.cloudmedia.discovery.events;
 
 import com.cloudmedia.discovery.search.NoopSearchIndexWriter;
+import com.cloudmedia.discovery.search.NoopSearchIndexReader;
 import com.cloudmedia.discovery.search.OpenSearchProperties;
+import com.cloudmedia.discovery.search.OpenSearchSearchIndexReader;
 import com.cloudmedia.discovery.search.OpenSearchSearchIndexWriter;
+import com.cloudmedia.discovery.search.SearchIndexReader;
 import com.cloudmedia.discovery.search.SearchIndexWriter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
@@ -30,9 +33,16 @@ public class DiscoveryIndexBridgeConfiguration {
 	@ConditionalOnProperty(prefix = "cloudmedia.discovery.opensearch", name = "enabled", havingValue = "true")
 	OpenSearchSearchIndexWriter openSearchSearchIndexWriter(RestTemplateBuilder restTemplateBuilder,
 			OpenSearchProperties openSearchProperties) {
-		RestTemplate restTemplate = restTemplateBuilder.setConnectTimeout(Duration.ofSeconds(5))
-				.setReadTimeout(Duration.ofSeconds(30)).build();
+		RestTemplate restTemplate = restTemplate(restTemplateBuilder);
 		return new OpenSearchSearchIndexWriter(restTemplate, openSearchProperties);
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = "cloudmedia.discovery.opensearch", name = "enabled", havingValue = "true")
+	OpenSearchSearchIndexReader openSearchSearchIndexReader(RestTemplateBuilder restTemplateBuilder,
+			OpenSearchProperties openSearchProperties, ObjectMapper objectMapper) {
+		RestTemplate restTemplate = restTemplate(restTemplateBuilder);
+		return new OpenSearchSearchIndexReader(restTemplate, openSearchProperties, objectMapper);
 	}
 
 	@Bean
@@ -42,9 +52,20 @@ public class DiscoveryIndexBridgeConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean(SearchIndexReader.class)
+	NoopSearchIndexReader noopSearchIndexReader() {
+		return new NoopSearchIndexReader();
+	}
+
+	@Bean
 	@ConditionalOnProperty(prefix = "cloudmedia.discovery.kafka", name = "enabled", havingValue = "true")
 	ContentIndexEventListener contentIndexEventListener(ObjectMapper objectMapper,
 			SearchIndexWriter searchIndexWriter) {
 		return new ContentIndexEventListener(objectMapper, searchIndexWriter);
+	}
+
+	private RestTemplate restTemplate(RestTemplateBuilder restTemplateBuilder) {
+		return restTemplateBuilder.setConnectTimeout(Duration.ofSeconds(5)).setReadTimeout(Duration.ofSeconds(30))
+				.build();
 	}
 }

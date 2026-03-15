@@ -1,0 +1,55 @@
+package com.cloudmedia.discovery.api.search;
+
+import com.cloudmedia.discovery.search.SearchIndexReader;
+import com.cloudmedia.discovery.search.SearchResponse;
+import com.cloudmedia.discovery.search.SearchResultItem;
+import java.time.Instant;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class SearchControllerTest {
+
+	@Autowired
+	private MockMvc mockMvc;
+
+	@Test
+	void searchReturnsResults() throws Exception {
+		mockMvc.perform(get("/v1/search").param("q", "cats").param("page", "1").param("size", "10")
+				.header("X-Request-Id", "req_search_1")).andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.items[0].contentId").value("cnt_1"))
+				.andExpect(jsonPath("$.data.page").value(1)).andExpect(jsonPath("$.data.size").value(10))
+				.andExpect(jsonPath("$.data.total").value(1))
+				.andExpect(jsonPath("$.meta.requestId").value("req_search_1"));
+	}
+
+	@Test
+	void searchValidatesBlankQuery() throws Exception {
+		mockMvc.perform(get("/v1/search").param("q", " ")).andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+	}
+
+	@TestConfiguration
+	static class SearchReaderTestConfiguration {
+
+		@Bean
+		@Primary
+		SearchIndexReader searchIndexReader() {
+			return (query, page, size) -> new SearchResponse(List.of(new SearchResultItem("cnt_1", "chn_1",
+					"Cats video", "Funny cats", "VIDEO", "PUBLIC", Instant.parse("2026-03-14T12:00:00Z"))), page, size,
+					1);
+		}
+	}
+}

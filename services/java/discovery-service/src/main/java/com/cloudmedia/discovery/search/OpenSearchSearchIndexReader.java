@@ -2,6 +2,7 @@ package com.cloudmedia.discovery.search;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +40,12 @@ public class OpenSearchSearchIndexReader implements SearchIndexReader {
 		try {
 			ResponseEntity<JsonNode> response = restTemplate.exchange(searchUrl(), HttpMethod.POST,
 					jsonEntity(searchBody(query, page, size)), JsonNode.class);
-			return mapResponse(response.getBody(), page, size);
+			JsonNode body = response.getBody();
+			if (body == null) {
+				throw new IllegalStateException("OpenSearch returned empty body for searchUrl=" + searchUrl()
+						+ " query=" + query + " page=" + page + " size=" + size);
+			}
+			return mapResponse(body, page, size);
 		} catch (RestClientException exception) {
 			LOGGER.error("Failed OpenSearch search query={} page={} size={} indexAlias={}", query, page, size,
 					properties.getIndexAlias(), exception);
@@ -68,7 +74,9 @@ public class OpenSearchSearchIndexReader implements SearchIndexReader {
 	}
 
 	private Map<String, Object> searchBody(String query, int page, int size) {
-		return Map.of("from", page * size, "size", size, "query",
+		long rawFrom = (long) page * (long) size;
+		int safeFrom = rawFrom < 0 ? 0 : (int) Math.min(rawFrom, Integer.MAX_VALUE);
+		return Map.of("from", safeFrom, "size", size, "query",
 				Map.of("multi_match", Map.of("query", query, "fields", List.of("title^2", "description"))), "sort",
 				List.of(Map.of("_score", "desc"), Map.of("publishedAt", Map.of("order", "desc", "missing", "_last"))));
 	}
@@ -83,6 +91,18 @@ public class OpenSearchSearchIndexReader implements SearchIndexReader {
 	}
 
 	private Instant instantOrNull(JsonNode source, String field) {
-		return source.hasNonNull(field) ? Instant.parse(source.path(field).asText()) : null;
+		if (!source.hasNonNull(field)) {
+			return null;
+		}
+		String value = source.path(field).asText(null);
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		try {
+			return Instant.parse(value);
+		} catch (DateTimeException exception) {
+			LOGGER.warn("Ignoring malformed instant field={} value={}", field, value);
+			return null;
+		}
 	}
 }

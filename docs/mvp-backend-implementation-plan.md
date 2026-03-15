@@ -485,7 +485,7 @@ Current completed slices:
 
 Next active slice:
 
-- Discovery-service indexing foundation:
-  - consume `content.published`, `content.updated`, and `content.unpublished`
-  - translate lifecycle events into derived index upsert/delete operations
-  - keep OpenSearch writes behind a noop-safe writer abstraction
+- Discovery-service search read API:
+  - add `GET /v1/search` on top of the derived content index
+  - use page/size pagination for the first search slice
+  - defer autocomplete and advanced filters to follow-up PRs

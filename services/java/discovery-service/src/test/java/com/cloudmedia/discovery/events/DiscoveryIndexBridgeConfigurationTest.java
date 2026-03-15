@@ -1,7 +1,10 @@
 package com.cloudmedia.discovery.events;
 
 import com.cloudmedia.discovery.search.NoopSearchIndexWriter;
+import com.cloudmedia.discovery.search.NoopSearchIndexReader;
 import com.cloudmedia.discovery.search.OpenSearchSearchIndexWriter;
+import com.cloudmedia.discovery.search.OpenSearchSearchIndexReader;
+import com.cloudmedia.discovery.search.SearchIndexReader;
 import com.cloudmedia.discovery.search.SearchIndexWriter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
@@ -24,6 +27,8 @@ class DiscoveryIndexBridgeConfigurationTest {
 		contextRunner.run(context -> {
 			assertThat(context).hasSingleBean(SearchIndexWriter.class);
 			assertThat(context).hasSingleBean(NoopSearchIndexWriter.class);
+			assertThat(context).hasSingleBean(SearchIndexReader.class);
+			assertThat(context).hasSingleBean(NoopSearchIndexReader.class);
 		});
 	}
 
@@ -33,6 +38,9 @@ class DiscoveryIndexBridgeConfigurationTest {
 			assertThat(context).hasSingleBean(SearchIndexWriter.class);
 			assertThat(context).hasSingleBean(OpenSearchSearchIndexWriter.class);
 			assertThat(context).doesNotHaveBean(NoopSearchIndexWriter.class);
+			assertThat(context).hasSingleBean(SearchIndexReader.class);
+			assertThat(context).hasSingleBean(OpenSearchSearchIndexReader.class);
+			assertThat(context).doesNotHaveBean(NoopSearchIndexReader.class);
 		});
 	}
 

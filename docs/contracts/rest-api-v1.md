@@ -116,7 +116,8 @@ This document defines the MVP API contract groups, standards, and core request/r
 
 ### `GET /v1/search`
 - Keyword search over OpenSearch-backed index
-- Supports filters: category, duration, upload time
+- MVP params: `q`, `page`, `size`
+- Current MVP does not yet support category, duration, or upload-time filters
 
 ### `GET /v1/search/autocomplete`
 - Query suggestions

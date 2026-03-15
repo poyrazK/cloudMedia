@@ -7,6 +7,8 @@ public class SearchService {
 
 	private static final int DEFAULT_PAGE = 0;
 
+	static final int MIN_SIZE = 1;
+
 	private static final int DEFAULT_SIZE = 20;
 
 	private static final int MAX_SIZE = 100;
@@ -19,7 +21,7 @@ public class SearchService {
 
 	public SearchResponse search(String query, Integer page, Integer size) {
 		int resolvedPage = page == null ? DEFAULT_PAGE : Math.max(page, 0);
-		int resolvedSize = size == null ? DEFAULT_SIZE : Math.min(Math.max(size, 1), MAX_SIZE);
+		int resolvedSize = size == null ? DEFAULT_SIZE : Math.min(Math.max(size, MIN_SIZE), MAX_SIZE);
 		return searchIndexReader.search(query, resolvedPage, resolvedSize);
 	}
 }

@@ -122,7 +122,8 @@ This document defines the MVP API contract groups, standards, and core request/r
 - TODO: migrate search results to cursor-based pagination after the initial read API stabilizes
 
 ### `GET /v1/search/autocomplete`
-- Query suggestions
+- Title suggestion endpoint over the derived search index
+- MVP params: required non-blank `q`; optional integer `size` with min `1`, default `5`, max `10`
 
 ### `GET /v1/discovery/home`
 - Balanced feed (followed + trending + fresh + similar)

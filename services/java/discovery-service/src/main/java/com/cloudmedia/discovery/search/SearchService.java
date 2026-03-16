@@ -11,7 +11,11 @@ public class SearchService {
 
 	private static final int DEFAULT_SIZE = 20;
 
+	private static final int DEFAULT_AUTOCOMPLETE_SIZE = 5;
+
 	private static final int MAX_SIZE = 100;
+
+	private static final int MAX_AUTOCOMPLETE_SIZE = 10;
 
 	private final SearchIndexReader searchIndexReader;
 
@@ -23,5 +27,12 @@ public class SearchService {
 		int resolvedPage = page == null ? DEFAULT_PAGE : Math.max(page, 0);
 		int resolvedSize = size == null ? DEFAULT_SIZE : Math.min(Math.max(size, MIN_SIZE), MAX_SIZE);
 		return searchIndexReader.search(query, resolvedPage, resolvedSize);
+	}
+
+	public AutocompleteResponse autocomplete(String query, Integer size) {
+		int resolvedSize = size == null
+				? DEFAULT_AUTOCOMPLETE_SIZE
+				: Math.min(Math.max(size, MIN_SIZE), MAX_AUTOCOMPLETE_SIZE);
+		return searchIndexReader.autocomplete(query, resolvedSize);
 	}
 }

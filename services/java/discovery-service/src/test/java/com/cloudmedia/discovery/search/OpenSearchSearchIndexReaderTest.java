@@ -89,4 +89,53 @@ class OpenSearchSearchIndexReaderTest {
 
 		assertEquals("Failed to search index for query cats", exception.getMessage());
 	}
+
+	@Test
+	void autocompleteQueriesConfiguredIndexAliasAndMapsSuggestions() {
+		server.expect(once(), requestTo("http://localhost:9200/content-read/_search"))
+				.andExpect(method(HttpMethod.POST)).andExpect(content().json("""
+						{
+						  "size": 3,
+						  "_source": ["contentId", "channelId", "title"],
+						  "query": {
+						    "match_phrase_prefix": {
+						      "title": {
+						        "query": "cat"
+						      }
+						    }
+						  }
+						}
+						""", false)).andRespond(withSuccess("""
+						{
+						  "hits": {
+						    "hits": [
+						      {
+						        "_source": {
+						          "contentId": "cnt_1",
+						          "channelId": "chn_1",
+						          "title": "Cats video"
+						        }
+						      }
+						    ]
+						  }
+						}
+						""", org.springframework.http.MediaType.APPLICATION_JSON));
+
+		AutocompleteResponse response = reader.autocomplete("cat", 3);
+
+		assertEquals(1, response.items().size());
+		assertEquals("Cats video", response.items().getFirst().text());
+		assertEquals(3, response.size());
+	}
+
+	@Test
+	void autocompleteWrapsRestFailures() {
+		server.expect(once(), requestTo("http://localhost:9200/content-read/_search"))
+				.andExpect(method(HttpMethod.POST)).andRespond(withStatus(INTERNAL_SERVER_ERROR));
+
+		IllegalStateException exception = assertThrows(IllegalStateException.class,
+				() -> reader.autocomplete("cat", 3));
+
+		assertEquals("Failed to autocomplete query cat", exception.getMessage());
+	}
 }

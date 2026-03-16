@@ -488,4 +488,6 @@ Next active slice:
 - Discovery-service search read API:
   - add `GET /v1/search` on top of the derived content index
   - use page/size pagination for the first search slice
-  - defer `GET /v1/search/autocomplete` and advanced filters to follow-up PRs
+- Discovery-service autocomplete API:
+  - add `GET /v1/search/autocomplete` for title suggestions from indexed content
+  - keep autocomplete size small and defer advanced filters to follow-up PRs

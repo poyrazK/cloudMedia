@@ -53,6 +53,24 @@ public class OpenSearchSearchIndexReader implements SearchIndexReader {
 		}
 	}
 
+	@Override
+	public AutocompleteResponse autocomplete(String query, int size) {
+		try {
+			ResponseEntity<JsonNode> response = restTemplate.exchange(searchUrl(), HttpMethod.POST,
+					jsonEntity(autocompleteBody(query, size)), JsonNode.class);
+			JsonNode body = response.getBody();
+			if (body == null) {
+				throw new IllegalStateException("OpenSearch returned empty body for autocomplete searchUrl="
+						+ searchUrl() + " query=" + query + " size=" + size);
+			}
+			return mapAutocompleteResponse(body, size);
+		} catch (RestClientException exception) {
+			LOGGER.error("Failed OpenSearch autocomplete query={} size={} indexAlias={}", query, size,
+					properties.getIndexAlias(), exception);
+			throw new IllegalStateException("Failed to autocomplete query " + query, exception);
+		}
+	}
+
 	private SearchResponse mapResponse(JsonNode body, int page, int size) {
 		JsonNode hitsNode = body.path("hits");
 		long total = hitsNode.path("total").path("value").asLong(0);
@@ -67,6 +85,16 @@ public class OpenSearchSearchIndexReader implements SearchIndexReader {
 		return new SearchResponse(items, page, size, total);
 	}
 
+	private AutocompleteResponse mapAutocompleteResponse(JsonNode body, int size) {
+		List<AutocompleteSuggestion> items = new ArrayList<>();
+		for (JsonNode hit : body.path("hits").path("hits")) {
+			JsonNode source = hit.path("_source");
+			items.add(new AutocompleteSuggestion(source.path("title").asText(), source.path("contentId").asText(),
+					source.path("channelId").asText()));
+		}
+		return new AutocompleteResponse(items, size);
+	}
+
 	private HttpEntity<Map<String, Object>> jsonEntity(Map<String, Object> body) {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -79,6 +107,12 @@ public class OpenSearchSearchIndexReader implements SearchIndexReader {
 		return Map.of("from", safeFrom, "size", size, "query",
 				Map.of("multi_match", Map.of("query", query, "fields", List.of("title^2", "description"))), "sort",
 				List.of(Map.of("_score", "desc"), Map.of("publishedAt", Map.of("order", "desc", "missing", "_last"))));
+	}
+
+	private Map<String, Object> autocompleteBody(String query, int size) {
+		return Map.of("size", size, "_source", List.of("contentId", "channelId", "title"), "query",
+				Map.of("match_phrase_prefix", Map.of("title", Map.of("query", query))), "sort",
+				List.of(Map.of("publishedAt", Map.of("order", "desc", "missing", "_last"))));
 	}
 
 	private String searchUrl() {

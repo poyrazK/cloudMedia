@@ -1,5 +1,6 @@
 package com.cloudmedia.discovery.search;
 
+import com.cloudmedia.discovery.discovery.HomeFeedCandidates;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -100,6 +101,11 @@ class SearchServiceTest {
 			this.autocompleteQuery = query;
 			this.autocompleteSize = size;
 			return new AutocompleteResponse(List.of(new AutocompleteSuggestion("Title", "cnt_1", "chn_1")), size);
+		}
+
+		@Override
+		public HomeFeedCandidates homeFeed(String userId, int size) {
+			return HomeFeedCandidates.empty();
 		}
 	}
 }

@@ -1,5 +1,8 @@
 package com.cloudmedia.discovery.search;
 
+import com.cloudmedia.discovery.discovery.FeedSourceBucket;
+import com.cloudmedia.discovery.discovery.HomeFeedCandidates;
+import com.cloudmedia.discovery.discovery.HomeFeedItem;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.DateTimeException;
@@ -71,6 +74,14 @@ public class OpenSearchSearchIndexReader implements SearchIndexReader {
 		}
 	}
 
+	@Override
+	public HomeFeedCandidates homeFeed(String userId, int size) {
+		int bucketSize = Math.max(size, 1);
+		return new HomeFeedCandidates(List.of(),
+				executeHomeFeedQuery(trendingBody(bucketSize), FeedSourceBucket.TRENDING),
+				executeHomeFeedQuery(freshBody(bucketSize), FeedSourceBucket.FRESH), List.of());
+	}
+
 	private SearchResponse mapResponse(JsonNode body, int page, int size) {
 		JsonNode hitsNode = body.path("hits");
 		long total = hitsNode.path("total").path("value").asLong(0);
@@ -83,6 +94,33 @@ public class OpenSearchSearchIndexReader implements SearchIndexReader {
 					instantOrNull(source, "publishedAt")));
 		}
 		return new SearchResponse(items, page, size, total);
+	}
+
+	private List<HomeFeedItem> executeHomeFeedQuery(Map<String, Object> body, FeedSourceBucket sourceBucket) {
+		try {
+			ResponseEntity<JsonNode> response = restTemplate.exchange(searchUrl(), HttpMethod.POST, jsonEntity(body),
+					JsonNode.class);
+			JsonNode responseBody = response.getBody();
+			if (responseBody == null) {
+				return List.of();
+			}
+			return mapHomeFeedItems(responseBody, sourceBucket);
+		} catch (RestClientException exception) {
+			LOGGER.error("Failed OpenSearch home feed query sourceBucket={} indexAlias={}", sourceBucket,
+					properties.getIndexAlias(), exception);
+			throw new IllegalStateException("Failed to load home feed bucket " + sourceBucket, exception);
+		}
+	}
+
+	private List<HomeFeedItem> mapHomeFeedItems(JsonNode body, FeedSourceBucket sourceBucket) {
+		List<HomeFeedItem> items = new ArrayList<>();
+		for (JsonNode hit : body.path("hits").path("hits")) {
+			JsonNode source = hit.path("_source");
+			items.add(new HomeFeedItem(textOrNull(source, "contentId"), textOrNull(source, "channelId"),
+					textOrNull(source, "title"), textOrNull(source, "description"), textOrNull(source, "contentType"),
+					textOrNull(source, "visibility"), instantOrNull(source, "publishedAt"), sourceBucket));
+		}
+		return items;
 	}
 
 	private AutocompleteResponse mapAutocompleteResponse(JsonNode body, int size) {
@@ -112,6 +150,16 @@ public class OpenSearchSearchIndexReader implements SearchIndexReader {
 	private Map<String, Object> autocompleteBody(String query, int size) {
 		return Map.of("size", size, "_source", List.of("contentId", "channelId", "title"), "query",
 				Map.of("match_phrase_prefix", Map.of("title", Map.of("query", query))), "sort",
+				List.of(Map.of("publishedAt", Map.of("order", "desc", "missing", "_last"))));
+	}
+
+	private Map<String, Object> trendingBody(int size) {
+		return Map.of("size", size, "query", Map.of("match_all", Map.of()), "sort",
+				List.of(Map.of("publishedAt", Map.of("order", "desc", "missing", "_last"))));
+	}
+
+	private Map<String, Object> freshBody(int size) {
+		return Map.of("size", size, "query", Map.of("match_all", Map.of()), "sort",
 				List.of(Map.of("publishedAt", Map.of("order", "desc", "missing", "_last"))));
 	}
 

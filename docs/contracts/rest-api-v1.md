@@ -123,7 +123,7 @@ This document defines the MVP API contract groups, standards, and core request/r
 
 ### `GET /v1/search/autocomplete`
 - Title suggestion endpoint over the derived search index
-- MVP params: `q`, optional `size` (default `5`, max `10`)
+- MVP params: required non-blank `q`; optional integer `size` with min `1`, default `5`, max `10`
 
 ### `GET /v1/discovery/home`
 - Balanced feed (followed + trending + fresh + similar)

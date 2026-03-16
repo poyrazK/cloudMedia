@@ -483,11 +483,16 @@ Current completed slices:
   - `PATCH /v1/content/{content_id}` updates metadata fields
   - channel membership checks enforced for create/update
 
-Next active slice:
+Current completed slices:
 
 - Discovery-service search read API:
-  - add `GET /v1/search` on top of the derived content index
-  - use page/size pagination for the first search slice
+  - `GET /v1/search` runs on top of the derived content index
+  - the first search slice uses page/size pagination
 - Discovery-service autocomplete API:
-  - add `GET /v1/search/autocomplete` for title suggestions from indexed content
-  - keep autocomplete size small and defer advanced filters to follow-up PRs
+  - `GET /v1/search/autocomplete` serves title suggestions from indexed content
+  - autocomplete keeps a small size limit and still defers advanced filters
+
+Next active slice:
+
+- Discovery-service feed API:
+  - add `GET /v1/discovery/home` with a first balanced feed composition

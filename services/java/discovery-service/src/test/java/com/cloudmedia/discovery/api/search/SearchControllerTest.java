@@ -53,8 +53,21 @@ class SearchControllerTest {
 	}
 
 	@Test
+	void autocompleteUsesDefaultSizeWhenOmitted() throws Exception {
+		mockMvc.perform(get("/v1/search/autocomplete").param("q", "cat")).andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.size").value(5))
+				.andExpect(jsonPath("$.data.items[0].text").value("Cats video"));
+	}
+
+	@Test
 	void autocompleteValidatesSizeLimit() throws Exception {
 		mockMvc.perform(get("/v1/search/autocomplete").param("q", "cat").param("size", "11"))
+				.andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+	}
+
+	@Test
+	void autocompleteRejectsZeroSize() throws Exception {
+		mockMvc.perform(get("/v1/search/autocomplete").param("q", "cat").param("size", "0"))
 				.andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
 	}
 

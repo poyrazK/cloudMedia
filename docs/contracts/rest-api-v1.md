@@ -127,6 +127,8 @@ This document defines the MVP API contract groups, standards, and core request/r
 
 ### `GET /v1/discovery/home`
 - Balanced feed (followed + trending + fresh + similar)
+- MVP params: optional `userId`; optional integer `size` with min `1`, default `20`, max `50`
+- Returns a generic blended feed when `userId` is absent
 
 ### `GET /v1/discovery/trending`
 - Region-level trending feed

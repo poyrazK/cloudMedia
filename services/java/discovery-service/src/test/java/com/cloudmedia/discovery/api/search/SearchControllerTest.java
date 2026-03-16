@@ -1,5 +1,6 @@
 package com.cloudmedia.discovery.api.search;
 
+import com.cloudmedia.discovery.discovery.HomeFeedCandidates;
 import com.cloudmedia.discovery.search.SearchIndexReader;
 import com.cloudmedia.discovery.search.SearchResponse;
 import com.cloudmedia.discovery.search.SearchResultItem;
@@ -88,6 +89,11 @@ class SearchControllerTest {
 				public AutocompleteResponse autocomplete(String query, int size) {
 					return new AutocompleteResponse(List.of(new AutocompleteSuggestion("Cats video", "cnt_1", "chn_1")),
 							size);
+				}
+
+				@Override
+				public HomeFeedCandidates homeFeed(String userId, int size) {
+					return HomeFeedCandidates.empty();
 				}
 			};
 		}

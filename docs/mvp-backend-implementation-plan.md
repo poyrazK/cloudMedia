@@ -496,3 +496,5 @@ Next active slice:
 
 - Discovery-service feed API:
   - add `GET /v1/discovery/home` with a first balanced feed composition
+  - support a generic feed when `userId` is absent
+  - blend followed, trending, fresh, and similar buckets with simple heuristics

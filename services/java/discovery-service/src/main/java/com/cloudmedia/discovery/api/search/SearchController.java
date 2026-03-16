@@ -2,6 +2,7 @@ package com.cloudmedia.discovery.api.search;
 
 import com.cloudmedia.discovery.api.response.ApiMeta;
 import com.cloudmedia.discovery.api.response.ApiSuccessResponse;
+import com.cloudmedia.discovery.search.AutocompleteResponse;
 import com.cloudmedia.discovery.search.SearchResponse;
 import com.cloudmedia.discovery.search.SearchService;
 import jakarta.validation.constraints.Max;
@@ -35,6 +36,16 @@ public class SearchController {
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
 		String effectiveRequestId = requestId(requestId);
 		SearchResponse response = searchService.search(query, page, size);
+		return ResponseEntity.ok(new ApiSuccessResponse<>(response, new ApiMeta(effectiveRequestId, Instant.now())));
+	}
+
+	@GetMapping("/search/autocomplete")
+	public ResponseEntity<ApiSuccessResponse<AutocompleteResponse>> autocomplete(
+			@RequestParam("q") @NotBlank String query,
+			@RequestParam(value = "size", required = false) @Min(1) @Max(10) Integer size,
+			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
+		String effectiveRequestId = requestId(requestId);
+		AutocompleteResponse response = searchService.autocomplete(query, size);
 		return ResponseEntity.ok(new ApiSuccessResponse<>(response, new ApiMeta(effectiveRequestId, Instant.now())));
 	}
 

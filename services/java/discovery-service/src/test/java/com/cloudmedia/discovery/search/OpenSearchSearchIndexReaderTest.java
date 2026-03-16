@@ -127,4 +127,15 @@ class OpenSearchSearchIndexReaderTest {
 		assertEquals("Cats video", response.items().getFirst().text());
 		assertEquals(3, response.size());
 	}
+
+	@Test
+	void autocompleteWrapsRestFailures() {
+		server.expect(once(), requestTo("http://localhost:9200/content-read/_search"))
+				.andExpect(method(HttpMethod.POST)).andRespond(withStatus(INTERNAL_SERVER_ERROR));
+
+		IllegalStateException exception = assertThrows(IllegalStateException.class,
+				() -> reader.autocomplete("cat", 3));
+
+		assertEquals("Failed to autocomplete query cat", exception.getMessage());
+	}
 }

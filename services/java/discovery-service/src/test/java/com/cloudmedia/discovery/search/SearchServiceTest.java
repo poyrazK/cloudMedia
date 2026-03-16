@@ -64,6 +64,16 @@ class SearchServiceTest {
 		assertEquals(10, reader.autocompleteSize);
 	}
 
+	@Test
+	void autocompleteClampsSizeToMinimum() {
+		RecordingSearchIndexReader reader = new RecordingSearchIndexReader();
+		SearchService service = new SearchService(reader);
+
+		service.autocomplete("cat", 0);
+
+		assertEquals(SearchService.MIN_SIZE, reader.autocompleteSize);
+	}
+
 	static class RecordingSearchIndexReader implements SearchIndexReader {
 
 		private String query;

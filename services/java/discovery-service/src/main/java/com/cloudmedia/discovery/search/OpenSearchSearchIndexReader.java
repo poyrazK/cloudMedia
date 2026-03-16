@@ -89,8 +89,8 @@ public class OpenSearchSearchIndexReader implements SearchIndexReader {
 		List<AutocompleteSuggestion> items = new ArrayList<>();
 		for (JsonNode hit : body.path("hits").path("hits")) {
 			JsonNode source = hit.path("_source");
-			items.add(new AutocompleteSuggestion(source.path("title").asText(), source.path("contentId").asText(),
-					source.path("channelId").asText()));
+			items.add(new AutocompleteSuggestion(textOrNull(source, "title"), textOrNull(source, "contentId"),
+					textOrNull(source, "channelId")));
 		}
 		return new AutocompleteResponse(items, size);
 	}

@@ -3,6 +3,8 @@ package com.cloudmedia.discovery.api.search;
 import com.cloudmedia.discovery.search.SearchIndexReader;
 import com.cloudmedia.discovery.search.SearchResponse;
 import com.cloudmedia.discovery.search.SearchResultItem;
+import com.cloudmedia.discovery.search.AutocompleteResponse;
+import com.cloudmedia.discovery.search.AutocompleteSuggestion;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -41,15 +43,40 @@ class SearchControllerTest {
 				.andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
 	}
 
+	@Test
+	void autocompleteReturnsSuggestions() throws Exception {
+		mockMvc.perform(get("/v1/search/autocomplete").param("q", "cat").param("size", "3").header("X-Request-Id",
+				"req_autocomplete_1")).andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.items[0].text").value("Cats video"))
+				.andExpect(jsonPath("$.data.size").value(3))
+				.andExpect(jsonPath("$.meta.requestId").value("req_autocomplete_1"));
+	}
+
+	@Test
+	void autocompleteValidatesSizeLimit() throws Exception {
+		mockMvc.perform(get("/v1/search/autocomplete").param("q", "cat").param("size", "11"))
+				.andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+	}
+
 	@TestConfiguration
 	static class SearchReaderTestConfiguration {
 
 		@Bean
 		@Primary
 		SearchIndexReader searchIndexReader() {
-			return (query, page, size) -> new SearchResponse(List.of(new SearchResultItem("cnt_1", "chn_1",
-					"Cats video", "Funny cats", "VIDEO", "PUBLIC", Instant.parse("2026-03-14T12:00:00Z"))), page, size,
-					1);
+			return new SearchIndexReader() {
+				@Override
+				public SearchResponse search(String query, int page, int size) {
+					return new SearchResponse(List.of(new SearchResultItem("cnt_1", "chn_1", "Cats video", "Funny cats",
+							"VIDEO", "PUBLIC", Instant.parse("2026-03-14T12:00:00Z"))), page, size, 1);
+				}
+
+				@Override
+				public AutocompleteResponse autocomplete(String query, int size) {
+					return new AutocompleteResponse(List.of(new AutocompleteSuggestion("Cats video", "cnt_1", "chn_1")),
+							size);
+				}
+			};
 		}
 	}
 }

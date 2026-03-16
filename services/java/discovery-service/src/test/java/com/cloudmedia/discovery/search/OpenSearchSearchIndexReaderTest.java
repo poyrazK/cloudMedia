@@ -1,5 +1,6 @@
 package com.cloudmedia.discovery.search;
 
+import com.cloudmedia.discovery.discovery.HomeFeedCandidates;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -137,5 +138,56 @@ class OpenSearchSearchIndexReaderTest {
 				() -> reader.autocomplete("cat", 3));
 
 		assertEquals("Failed to autocomplete query cat", exception.getMessage());
+	}
+
+	@Test
+	void homeFeedReturnsTrendingAndFreshBuckets() {
+		server.expect(once(), requestTo("http://localhost:9200/content-read/_search"))
+				.andExpect(method(HttpMethod.POST)).andRespond(withSuccess("""
+						{
+						  "hits": {
+						    "hits": [
+						      {
+						        "_source": {
+						          "contentId": "trend_1",
+						          "channelId": "chn_1",
+						          "title": "Trending title",
+						          "description": "Description",
+						          "contentType": "VIDEO",
+						          "visibility": "PUBLIC",
+						          "publishedAt": "2026-03-14T12:00:00Z"
+						        }
+						      }
+						    ]
+						  }
+						}
+						""", org.springframework.http.MediaType.APPLICATION_JSON));
+		server.expect(once(), requestTo("http://localhost:9200/content-read/_search"))
+				.andExpect(method(HttpMethod.POST)).andRespond(withSuccess("""
+						{
+						  "hits": {
+						    "hits": [
+						      {
+						        "_source": {
+						          "contentId": "fresh_1",
+						          "channelId": "chn_2",
+						          "title": "Fresh title",
+						          "description": "Description",
+						          "contentType": "VIDEO",
+						          "visibility": "PUBLIC",
+						          "publishedAt": "2026-03-15T12:00:00Z"
+						        }
+						      }
+						    ]
+						  }
+						}
+						""", org.springframework.http.MediaType.APPLICATION_JSON));
+
+		HomeFeedCandidates response = reader.homeFeed(null, 5);
+
+		assertEquals(1, response.trending().size());
+		assertEquals("trend_1", response.trending().getFirst().contentId());
+		assertEquals(1, response.fresh().size());
+		assertEquals("fresh_1", response.fresh().getFirst().contentId());
 	}
 }

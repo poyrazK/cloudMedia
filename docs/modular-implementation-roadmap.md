@@ -40,7 +40,9 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 - Phase D (next): publish/unpublish workflow with playback-ready guard.
 
 ### PR-005: policy-service MVP
-- Age restriction and geo policy CRUD.
+- Phase A (next): service foundation, persistence model, and error/API baseline.
+- Phase B: age restriction and geo policy CRUD.
+- Phase C: moderation state endpoint.
 - Moderation visibility state endpoint.
 
 ### PR-006: social-service MVP

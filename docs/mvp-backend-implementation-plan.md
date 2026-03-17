@@ -494,7 +494,7 @@ Current completed slices:
 
 Next active slice:
 
-- Discovery-service feed API:
-  - add `GET /v1/discovery/home` with a first balanced feed composition
-  - support a generic feed when `userId` is absent
-  - blend followed, trending, fresh, and similar buckets with simple heuristics
+- Policy-service foundation:
+  - add persistence model for content age/geo/moderation policy state
+  - add shared API response and error handling baseline
+  - prepare the service for age/geo policy and moderation endpoints in follow-up PRs

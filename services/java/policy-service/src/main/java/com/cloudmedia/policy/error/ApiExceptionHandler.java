@@ -6,7 +6,9 @@ import com.cloudmedia.policy.api.response.ApiMeta;
 import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,8 +58,14 @@ public class ApiExceptionHandler {
 	}
 
 	private void mergeDetail(Map<String, String> details, String key, String message) {
-		details.merge(key, message,
-				(existing, incoming) -> existing.contains(incoming) ? existing : existing + "; " + incoming);
+		details.merge(key, message, (existing, incoming) -> {
+			Set<String> messages = new LinkedHashSet<>();
+			for (String part : existing.split("; ")) {
+				messages.add(part);
+			}
+			messages.add(incoming);
+			return String.join("; ", messages);
+		});
 	}
 
 	private ApiMeta meta() {

@@ -1,6 +1,8 @@
 spring:
   application:
     name: policy-service
+  jpa:
+    open-in-view: false
 
 server:
   port: 8084

@@ -60,6 +60,27 @@ class ContentPolicyServiceIntegrationTest {
 		assertEquals("POLICY_GEO_CONFLICT", exception.getCode());
 	}
 
+	@Test
+	void updateRejectsGeoOverlapAgainstPersistedValues() {
+		savePolicy("cnt_4", false, "TR,DE", "");
+
+		ApiException exception = assertThrows(ApiException.class, () -> contentPolicyService
+				.updateContentPolicy("cnt_4", new UpdateContentPolicyRequest(null, null, List.of("TR"))));
+
+		assertEquals("POLICY_GEO_CONFLICT", exception.getCode());
+	}
+
+	@Test
+	void updateRejectsOversizedGeoListSerialization() {
+		List<String> longAllowList = java.util.stream.IntStream.range(0, 180)
+				.mapToObj(i -> "" + (char) ('A' + (i / 26)) + (char) ('A' + (i % 26))).toList();
+
+		ApiException exception = assertThrows(ApiException.class, () -> contentPolicyService
+				.updateContentPolicy("cnt_5", new UpdateContentPolicyRequest(null, longAllowList, null)));
+
+		assertEquals("POLICY_GEO_LIST_TOO_LARGE", exception.getCode());
+	}
+
 	private void savePolicy(String contentId, boolean ageRestricted, String allowList, String blockList) {
 		ContentPolicyEntity entity = new ContentPolicyEntity();
 		entity.setContentId(contentId);

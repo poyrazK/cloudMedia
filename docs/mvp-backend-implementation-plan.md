@@ -495,6 +495,6 @@ Current completed slices:
 Next active slice:
 
 - Policy-service foundation:
-  - add persistence model for content age/geo/moderation policy state
-  - add shared API response and error handling baseline
-  - prepare the service for age/geo policy and moderation endpoints in follow-up PRs
+  - add `PATCH /v1/policy/content/{content_id}` for age restriction and geo policy updates
+  - support partial upsert semantics for content policy records
+  - keep moderation state updates in a follow-up PR

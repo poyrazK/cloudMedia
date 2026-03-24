@@ -494,7 +494,7 @@ Current completed slices:
 
 Next active slice:
 
-- Policy-service foundation:
-  - add `PATCH /v1/policy/content/{content_id}` for age restriction and geo policy updates
-  - support partial upsert semantics for content policy records
-  - keep moderation state updates in a follow-up PR
+- Policy-service moderation API:
+  - add `PATCH /v1/moderation/content/{content_id}` for moderation state updates
+  - preserve existing age/geo policy fields when moderation changes
+  - keep policy evaluation and downstream enforcement for a follow-up PR

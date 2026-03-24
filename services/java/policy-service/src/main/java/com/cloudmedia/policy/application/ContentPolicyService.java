@@ -2,6 +2,7 @@ package com.cloudmedia.policy.application;
 
 import com.cloudmedia.policy.api.policy.dto.ContentPolicyResponse;
 import com.cloudmedia.policy.api.policy.dto.UpdateContentPolicyRequest;
+import com.cloudmedia.policy.api.policy.dto.UpdateModerationStateRequest;
 import com.cloudmedia.policy.error.ApiException;
 import com.cloudmedia.policy.persistence.entity.ContentPolicyEntity;
 import com.cloudmedia.policy.persistence.entity.ModerationState;
@@ -53,6 +54,13 @@ public class ContentPolicyService {
 			entity.setGeoBlockList(serializeCodesWithGuard(normalizedBlockList));
 		}
 
+		return toResponse(contentPolicyRepository.save(entity));
+	}
+
+	@Transactional
+	public ContentPolicyResponse updateModerationState(String contentId, UpdateModerationStateRequest request) {
+		ContentPolicyEntity entity = contentPolicyRepository.findById(contentId).orElseGet(() -> newEntity(contentId));
+		entity.setModerationState(request.moderationState());
 		return toResponse(contentPolicyRepository.save(entity));
 	}
 

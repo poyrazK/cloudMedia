@@ -2,6 +2,7 @@ package com.cloudmedia.content.api.content;
 
 import com.cloudmedia.content.api.content.dto.ContentResponse;
 import com.cloudmedia.content.api.content.dto.CreateContentRequest;
+import com.cloudmedia.content.api.content.dto.PlaybackResponse;
 import com.cloudmedia.content.api.content.dto.UpdateContentRequest;
 import com.cloudmedia.content.api.response.ApiMeta;
 import com.cloudmedia.content.api.response.ApiSuccessResponse;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Validated
 @RestController
@@ -44,6 +47,16 @@ public class ContentController {
 			@PathVariable("contentId") @NotBlank String contentId, @Valid @RequestBody UpdateContentRequest request,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
 		ContentResponse response = contentService.updateMetadata(contentId, request);
+		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
+	}
+
+	@GetMapping("/content/{contentId}/playback")
+	public ResponseEntity<ApiSuccessResponse<PlaybackResponse>> getPlayback(
+			@PathVariable("contentId") @NotBlank String contentId,
+			@RequestParam(value = "countryCode", required = false) String countryCode,
+			@RequestParam(value = "ageVerified", required = false) Boolean ageVerified,
+			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
+		PlaybackResponse response = contentService.getPlayback(contentId, countryCode, ageVerified);
 		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
 	}
 

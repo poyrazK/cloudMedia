@@ -91,6 +91,8 @@ This document defines the MVP API contract groups, standards, and core request/r
 ### `GET /v1/content/{content_id}/playback`
 - Returns signed manifest URL and available renditions
 - Applies age/geo/moderation checks
+- Query params (MVP): optional `countryCode` (2-letter code), optional `ageVerified` (`true|false`)
+- Returns `403 CONTENT_POLICY_DENIED` when policy blocks playback
 
 ## 4) Social
 

@@ -2,27 +2,36 @@ package com.cloudmedia.content.application.content;
 
 import com.cloudmedia.content.api.content.dto.CreateContentRequest;
 import com.cloudmedia.content.api.content.dto.UpdateContentRequest;
+import com.cloudmedia.content.error.ApiException;
 import com.cloudmedia.content.persistence.entity.ChannelEntity;
 import com.cloudmedia.content.persistence.entity.ChannelMemberEntity;
 import com.cloudmedia.content.persistence.entity.ChannelMemberRole;
+import com.cloudmedia.content.persistence.entity.ContentEntity;
 import com.cloudmedia.content.persistence.entity.ContentState;
 import com.cloudmedia.content.persistence.entity.ContentType;
 import com.cloudmedia.content.persistence.entity.ContentVisibility;
 import com.cloudmedia.content.persistence.repository.ChannelMemberRepository;
 import com.cloudmedia.content.persistence.repository.ChannelRepository;
 import com.cloudmedia.content.persistence.repository.ContentRepository;
+import com.cloudmedia.content.policy.PolicyDecision;
+import com.cloudmedia.content.policy.PolicyEvaluationClient;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @Transactional
@@ -39,6 +48,9 @@ class ContentServiceIntegrationTest {
 
 	@Autowired
 	private ContentRepository contentRepository;
+
+	@MockBean
+	private PolicyEvaluationClient policyEvaluationClient;
 
 	@Test
 	void createDraftAppliesDefaultStateAndFlags() {
@@ -77,6 +89,49 @@ class ContentServiceIntegrationTest {
 		assertTrue(updated.updatedAt().isAfter(previousUpdatedAt) || updated.updatedAt().isEqual(previousUpdatedAt));
 	}
 
+	@Test
+	void getPlaybackReturnsManifestWhenPolicyAllows() {
+		ChannelEntity channel = saveChannel("channel-content-3", "content-channel-three");
+		ContentEntity content = saveContent(channel, "Playable", "Ready", ContentVisibility.PUBLIC,
+				ContentState.PUBLISHED, true);
+
+		when(policyEvaluationClient.evaluate(eq(content.getId()), eq("US"), eq(Boolean.TRUE)))
+				.thenReturn(new PolicyDecision(true, List.of()));
+
+		var playback = contentService.getPlayback(content.getId(), "US", true);
+
+		assertEquals(content.getId(), playback.contentId());
+		assertTrue(playback.manifestUrl().contains(content.getId()));
+		assertEquals(List.of("1080p", "4K"), playback.availableRenditions());
+	}
+
+	@Test
+	void getPlaybackReturnsForbiddenWhenPolicyDenies() {
+		ChannelEntity channel = saveChannel("channel-content-4", "content-channel-four");
+		ContentEntity content = saveContent(channel, "Blocked", "Policy blocked", ContentVisibility.PUBLIC,
+				ContentState.PUBLISHED, true);
+
+		when(policyEvaluationClient.evaluate(eq(content.getId()), eq("DE"), eq(Boolean.TRUE)))
+				.thenReturn(new PolicyDecision(false, List.of("GEO_BLOCKED")));
+
+		ApiException exception = assertThrows(ApiException.class,
+				() -> contentService.getPlayback(content.getId(), "DE", true));
+
+		assertEquals("CONTENT_POLICY_DENIED", exception.getCode());
+	}
+
+	@Test
+	void getPlaybackReturnsConflictForUnplayableState() {
+		ChannelEntity channel = saveChannel("channel-content-5", "content-channel-five");
+		ContentEntity content = saveContent(channel, "Draft", "Not ready", ContentVisibility.PRIVATE,
+				ContentState.DRAFT, false);
+
+		ApiException exception = assertThrows(ApiException.class,
+				() -> contentService.getPlayback(content.getId(), "US", true));
+
+		assertEquals("CONTENT_NOT_PLAYABLE", exception.getCode());
+	}
+
 	private ChannelEntity saveChannel(String id, String slug) {
 		ChannelEntity channel = new ChannelEntity();
 		channel.setId(id);
@@ -96,5 +151,22 @@ class ContentServiceIntegrationTest {
 		member.setRole(role);
 		member.setJoinedAt(LocalDateTime.now());
 		channelMemberRepository.saveAndFlush(member);
+	}
+
+	private ContentEntity saveContent(ChannelEntity channel, String title, String description,
+			ContentVisibility visibility, ContentState state, boolean playbackReady) {
+		ContentEntity content = new ContentEntity();
+		content.setId(UUID.randomUUID().toString());
+		content.setChannel(channel);
+		content.setTitle(title);
+		content.setDescription(description);
+		content.setContentType(ContentType.VIDEO);
+		content.setState(state);
+		content.setVisibility(visibility);
+		content.setPlaybackReady(playbackReady);
+		content.setCreatedAt(LocalDateTime.now());
+		content.setUpdatedAt(LocalDateTime.now());
+		content.setPublishedAt(state == ContentState.PUBLISHED ? LocalDateTime.now() : null);
+		return contentRepository.saveAndFlush(content);
 	}
 }

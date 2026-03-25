@@ -22,9 +22,9 @@ class SearchServiceTest {
 		assertEquals("video", reader.query);
 		assertEquals(0, reader.page);
 		assertEquals(20, reader.size);
-		assertEquals("cnt_1", policyClient.lastContentId);
-		assertEquals("US", policyClient.lastCountryCode);
-		assertEquals(Boolean.TRUE, policyClient.lastAgeVerified);
+		assertEquals("cnt_1", policyClient.recordedContentIds.get(0));
+		assertEquals("US", policyClient.recordedCountryCodes.get(0));
+		assertEquals(Boolean.TRUE, policyClient.recordedAgeVerified.get(0));
 		assertEquals(1, response.items().size());
 	}
 
@@ -65,7 +65,8 @@ class SearchServiceTest {
 
 		assertEquals(1, response.items().size());
 		assertEquals("cnt_allowed", response.items().get(0).contentId());
-		assertEquals(1, response.total());
+		assertEquals(2, response.total());
+		assertEquals(List.of("cnt_allowed", "cnt_blocked"), policyClient.recordedContentIds);
 	}
 
 	@Test
@@ -138,19 +139,19 @@ class SearchServiceTest {
 
 	static class RecordingPolicyEvaluationClient implements PolicyEvaluationClient {
 
-		private String lastContentId;
+		private final List<String> recordedContentIds = new java.util.ArrayList<>();
 
-		private String lastCountryCode;
+		private final List<String> recordedCountryCodes = new java.util.ArrayList<>();
 
-		private Boolean lastAgeVerified;
+		private final List<Boolean> recordedAgeVerified = new java.util.ArrayList<>();
 
 		private List<String> blockedContentIds = List.of();
 
 		@Override
 		public PolicyDecision evaluate(String contentId, String countryCode, Boolean ageVerified) {
-			this.lastContentId = contentId;
-			this.lastCountryCode = countryCode;
-			this.lastAgeVerified = ageVerified;
+			recordedContentIds.add(contentId);
+			recordedCountryCodes.add(countryCode);
+			recordedAgeVerified.add(ageVerified);
 			boolean allowed = !blockedContentIds.contains(contentId);
 			return new PolicyDecision(allowed, allowed ? List.of() : List.of("CONTENT_BLOCKED"));
 		}

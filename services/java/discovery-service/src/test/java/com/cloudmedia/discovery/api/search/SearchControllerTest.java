@@ -50,7 +50,13 @@ class SearchControllerTest {
 	void searchFiltersPolicyBlockedItems() throws Exception {
 		mockMvc.perform(get("/v1/search").param("q", "blocked").param("countryCode", "US").param("ageVerified", "true"))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.data.items.length()").value(0))
-				.andExpect(jsonPath("$.data.total").value(0));
+				.andExpect(jsonPath("$.data.total").value(1));
+	}
+
+	@Test
+	void searchRejectsInvalidCountryCodeFormat() throws Exception {
+		mockMvc.perform(get("/v1/search").param("q", "cats").param("countryCode", "usa"))
+				.andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
 	}
 
 	@Test

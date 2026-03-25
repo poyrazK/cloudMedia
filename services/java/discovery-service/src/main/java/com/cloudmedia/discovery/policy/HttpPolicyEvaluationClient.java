@@ -2,9 +2,11 @@ package com.cloudmedia.discovery.policy;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.annotation.Nullable;
+import java.time.Duration;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
@@ -15,7 +17,10 @@ public class HttpPolicyEvaluationClient implements PolicyEvaluationClient {
 
 	public HttpPolicyEvaluationClient(RestClient.Builder restClientBuilder,
 			@Value("${policy.service.base-url:http://localhost:8084}") String baseUrl) {
-		this.restClient = restClientBuilder.baseUrl(baseUrl).build();
+		SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+		requestFactory.setConnectTimeout((int) Duration.ofSeconds(2).toMillis());
+		requestFactory.setReadTimeout((int) Duration.ofSeconds(3).toMillis());
+		this.restClient = restClientBuilder.baseUrl(baseUrl).requestFactory(requestFactory).build();
 	}
 
 	@Override

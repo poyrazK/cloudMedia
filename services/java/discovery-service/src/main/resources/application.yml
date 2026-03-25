@@ -25,4 +25,4 @@ server:
 
 policy:
   service:
-    base-url: http://localhost:8084
+    base-url: ${POLICY_SERVICE_BASE_URL:http://localhost:8084}

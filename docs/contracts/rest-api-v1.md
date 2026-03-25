@@ -120,7 +120,7 @@ This document defines the MVP API contract groups, standards, and core request/r
 - Keyword search over OpenSearch-backed index
 - MVP exception to the global cursor-pagination rule: uses `q`, `page`, `size`
 - Current semantics: `page` is 0-based, `size` max is `100`
-- Supports optional policy context params: `countryCode` and `ageVerified`
+- Supports optional policy context params: `countryCode` (ISO 3166-1 alpha-2 uppercase, e.g. `US`) and `ageVerified`
 - Filters out policy-blocked content from results
 - Current MVP does not yet support category, duration, or upload-time filters
 - TODO: migrate search results to cursor-based pagination after the initial read API stabilizes

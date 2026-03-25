@@ -68,11 +68,15 @@ public class ContentPolicyService {
 
 	@Transactional(readOnly = true)
 	public ContentPolicyDecisionResponse evaluateContentPolicy(String contentId, EvaluateContentPolicyRequest request) {
+		if (request == null) {
+			throw new IllegalArgumentException("request must not be null");
+		}
 		ContentPolicyEntity entity = contentPolicyRepository.findById(contentId).orElseGet(() -> newEntity(contentId));
 		List<String> reasonCodes = new ArrayList<>();
 		List<String> geoAllowList = parseCodes(entity.getGeoAllowList());
 		List<String> geoBlockList = parseCodes(entity.getGeoBlockList());
 		String countryCode = normalizeCountryCode(request.countryCode());
+		boolean ageVerified = Boolean.TRUE.equals(request.ageVerified());
 
 		if (entity.getModerationState() == ModerationState.REMOVED) {
 			reasonCodes.add("MODERATION_REMOVED");
@@ -80,7 +84,7 @@ public class ContentPolicyService {
 			reasonCodes.add("MODERATION_HIDDEN");
 		}
 
-		if (reasonCodes.isEmpty() && entity.isAgeRestricted() && !Boolean.TRUE.equals(request.ageVerified())) {
+		if (reasonCodes.isEmpty() && entity.isAgeRestricted() && !ageVerified) {
 			reasonCodes.add("AGE_RESTRICTED");
 		}
 

@@ -41,14 +41,14 @@ This starts:
 - Kafka on `localhost:9092`
 - Redis on `localhost:6379`
 
-2. Run a service (example: identity-service):
+1. Run a service (example: identity-service):
 
 ```bash
 cd services/java
 SPRING_PROFILES_ACTIVE=local mvn -pl identity-service -am spring-boot:run
 ```
 
-3. Stop or reset infrastructure when needed:
+1. Stop or reset infrastructure when needed:
 
 ```bash
 make dev-down   # keep data

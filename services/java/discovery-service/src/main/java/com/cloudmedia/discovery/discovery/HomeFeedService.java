@@ -2,12 +2,14 @@ package com.cloudmedia.discovery.discovery;
 
 import com.cloudmedia.discovery.error.ApiException;
 import com.cloudmedia.discovery.policy.PolicyEvaluationClient;
+import com.cloudmedia.discovery.policy.PolicyDecision;
 import com.cloudmedia.discovery.policy.PolicyEvaluationException;
 import com.cloudmedia.discovery.search.SearchIndexReader;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -89,9 +91,14 @@ public class HomeFeedService {
 
 	private List<HomeFeedItem> filterByPolicy(List<HomeFeedItem> items, String countryCode, Boolean ageVerified) {
 		try {
-			return items.stream().filter(
-					item -> policyEvaluationClient.evaluate(item.contentId(), countryCode, ageVerified).allowed())
-					.toList();
+			List<String> distinctContentIds = items.stream().map(HomeFeedItem::contentId).filter(Objects::nonNull)
+					.distinct().toList();
+			Map<String, PolicyDecision> decisions = policyEvaluationClient.evaluateBatch(distinctContentIds,
+					countryCode, ageVerified);
+			return items.stream().filter(item -> {
+				PolicyDecision decision = decisions.get(item.contentId());
+				return decision != null && decision.allowed();
+			}).toList();
 		} catch (PolicyEvaluationException exception) {
 			throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "POLICY_SERVICE_UNAVAILABLE",
 					"Policy evaluation is temporarily unavailable", null);

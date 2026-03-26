@@ -22,7 +22,9 @@ class HomeFeedServiceTest {
 		HomeFeedResponse response = service.homeFeed(null, null, "US", true);
 
 		assertEquals(20, reader.size);
-		assertEquals(List.of("follow-1", "trend-1", "similar-1"), policyClient.recordedContentIds);
+		assertEquals(List.of("follow-1", "trend-1", "trend-1", "similar-1"), policyClient.recordedContentIds);
+		assertEquals(List.of("US", "US", "US", "US"), policyClient.recordedCountryCodes);
+		assertEquals(List.of(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE, Boolean.TRUE), policyClient.recordedAgeVerified);
 		assertEquals(3, response.items().size());
 		assertEquals(FeedSourceBucket.FOLLOWED, response.items().get(0).sourceBucket());
 		assertEquals(FeedSourceBucket.TRENDING, response.items().get(1).sourceBucket());
@@ -91,11 +93,17 @@ class HomeFeedServiceTest {
 
 		private final List<String> recordedContentIds = new java.util.ArrayList<>();
 
+		private final List<String> recordedCountryCodes = new java.util.ArrayList<>();
+
+		private final List<Boolean> recordedAgeVerified = new java.util.ArrayList<>();
+
 		private List<String> blockedContentIds = List.of();
 
 		@Override
 		public PolicyDecision evaluate(String contentId, String countryCode, Boolean ageVerified) {
 			recordedContentIds.add(contentId);
+			recordedCountryCodes.add(countryCode);
+			recordedAgeVerified.add(ageVerified);
 			boolean allowed = !blockedContentIds.contains(contentId);
 			return new PolicyDecision(allowed, allowed ? List.of() : List.of("CONTENT_BLOCKED"));
 		}

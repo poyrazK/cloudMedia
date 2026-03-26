@@ -2,6 +2,7 @@ package com.cloudmedia.discovery.api.discovery;
 
 import com.cloudmedia.discovery.api.response.ApiMeta;
 import com.cloudmedia.discovery.api.response.ApiSuccessResponse;
+import com.cloudmedia.discovery.api.validation.ValidCountryCode;
 import com.cloudmedia.discovery.discovery.HomeFeedResponse;
 import com.cloudmedia.discovery.discovery.HomeFeedService;
 import jakarta.validation.constraints.Max;
@@ -31,9 +32,11 @@ public class DiscoveryController {
 	public ResponseEntity<ApiSuccessResponse<HomeFeedResponse>> home(
 			@RequestParam(value = "userId", required = false) String userId,
 			@RequestParam(value = "size", required = false) @Min(1) @Max(50) Integer size,
+			@RequestParam(value = "countryCode", required = false) @ValidCountryCode String countryCode,
+			@RequestParam(value = "ageVerified", required = false) Boolean ageVerified,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
 		String effectiveRequestId = requestId(requestId);
-		HomeFeedResponse response = homeFeedService.homeFeed(userId, size);
+		HomeFeedResponse response = homeFeedService.homeFeed(userId, size, countryCode, ageVerified);
 		return ResponseEntity.ok(new ApiSuccessResponse<>(response, new ApiMeta(effectiveRequestId, Instant.now())));
 	}
 

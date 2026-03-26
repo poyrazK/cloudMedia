@@ -1,5 +1,6 @@
 package com.cloudmedia.discovery.api.discovery;
 
+import com.cloudmedia.discovery.error.ApiException;
 import com.cloudmedia.discovery.discovery.FeedSourceBucket;
 import com.cloudmedia.discovery.discovery.HomeFeedCandidates;
 import com.cloudmedia.discovery.discovery.HomeFeedItem;
@@ -17,6 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -45,6 +47,19 @@ class DiscoveryControllerTest {
 				.andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
 	}
 
+	@Test
+	void homeValidatesCountryCodeFormat() throws Exception {
+		mockMvc.perform(get("/v1/discovery/home").param("countryCode", "usa")).andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+	}
+
+	@Test
+	void homeReturnsServiceUnavailableWhenPolicyEvaluationFails() throws Exception {
+		mockMvc.perform(get("/v1/discovery/home").param("userId", "fail-policy"))
+				.andExpect(status().isServiceUnavailable())
+				.andExpect(jsonPath("$.error.code").value("POLICY_SERVICE_UNAVAILABLE"));
+	}
+
 	@TestConfiguration
 	static class HomeFeedTestConfiguration {
 
@@ -66,9 +81,14 @@ class DiscoveryControllerTest {
 				public HomeFeedCandidates homeFeed(String userId, int size) {
 					return HomeFeedCandidates.empty();
 				}
-			}) {
+			}, (contentId, countryCode, ageVerified) -> new com.cloudmedia.discovery.policy.PolicyDecision(true,
+					List.of())) {
 				@Override
-				public HomeFeedResponse homeFeed(String userId, Integer size) {
+				public HomeFeedResponse homeFeed(String userId, Integer size, String countryCode, Boolean ageVerified) {
+					if ("fail-policy".equals(userId)) {
+						throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "POLICY_SERVICE_UNAVAILABLE",
+								"Policy evaluation is temporarily unavailable", null);
+					}
 					return new HomeFeedResponse(List.of(new HomeFeedItem("cnt_1", "chn_1", "Title", "Description",
 							"VIDEO", "PUBLIC", Instant.parse("2026-03-14T12:00:00Z"), FeedSourceBucket.TRENDING)), 2);
 				}

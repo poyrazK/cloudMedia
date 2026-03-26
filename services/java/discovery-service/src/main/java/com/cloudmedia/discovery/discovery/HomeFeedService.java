@@ -1,10 +1,16 @@
 package com.cloudmedia.discovery.discovery;
 
+import com.cloudmedia.discovery.error.ApiException;
+import com.cloudmedia.discovery.policy.PolicyEvaluationClient;
+import com.cloudmedia.discovery.policy.PolicyDecision;
+import com.cloudmedia.discovery.policy.PolicyEvaluationException;
 import com.cloudmedia.discovery.search.SearchIndexReader;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,14 +24,22 @@ public class HomeFeedService {
 
 	private final SearchIndexReader searchIndexReader;
 
-	public HomeFeedService(SearchIndexReader searchIndexReader) {
+	private final PolicyEvaluationClient policyEvaluationClient;
+
+	public HomeFeedService(SearchIndexReader searchIndexReader, PolicyEvaluationClient policyEvaluationClient) {
 		this.searchIndexReader = searchIndexReader;
+		this.policyEvaluationClient = policyEvaluationClient;
 	}
 
-	public HomeFeedResponse homeFeed(String userId, Integer size) {
+	public HomeFeedResponse homeFeed(String userId, Integer size, String countryCode, Boolean ageVerified) {
 		int resolvedSize = size == null ? DEFAULT_SIZE : Math.min(Math.max(size, MIN_SIZE), MAX_SIZE);
 		HomeFeedCandidates candidates = searchIndexReader.homeFeed(userId, resolvedSize);
-		return new HomeFeedResponse(blend(candidates, resolvedSize), resolvedSize);
+		HomeFeedCandidates policyFilteredCandidates = new HomeFeedCandidates(
+				filterByPolicy(candidates.followed(), countryCode, ageVerified),
+				filterByPolicy(candidates.trending(), countryCode, ageVerified),
+				filterByPolicy(candidates.fresh(), countryCode, ageVerified),
+				filterByPolicy(candidates.similar(), countryCode, ageVerified));
+		return new HomeFeedResponse(blend(policyFilteredCandidates, resolvedSize), resolvedSize);
 	}
 
 	private List<HomeFeedItem> blend(HomeFeedCandidates candidates, int size) {
@@ -73,5 +87,21 @@ public class HomeFeedService {
 
 	private int slotsFor(int size, double ratio) {
 		return Math.max(1, (int) Math.floor(size * ratio));
+	}
+
+	private List<HomeFeedItem> filterByPolicy(List<HomeFeedItem> items, String countryCode, Boolean ageVerified) {
+		try {
+			List<String> distinctContentIds = items.stream().map(HomeFeedItem::contentId).filter(Objects::nonNull)
+					.distinct().toList();
+			Map<String, PolicyDecision> decisions = policyEvaluationClient.evaluateBatch(distinctContentIds,
+					countryCode, ageVerified);
+			return items.stream().filter(item -> {
+				PolicyDecision decision = decisions.get(item.contentId());
+				return decision != null && decision.allowed();
+			}).toList();
+		} catch (PolicyEvaluationException exception) {
+			throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "POLICY_SERVICE_UNAVAILABLE",
+					"Policy evaluation is temporarily unavailable", null);
+		}
 	}
 }

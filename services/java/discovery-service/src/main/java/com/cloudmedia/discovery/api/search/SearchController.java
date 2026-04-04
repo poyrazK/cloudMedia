@@ -33,9 +33,11 @@ public class SearchController {
 	public ResponseEntity<ApiSuccessResponse<SearchResponse>> search(@RequestParam("q") @NotBlank String query,
 			@RequestParam(value = "page", required = false) @Min(0) Integer page,
 			@RequestParam(value = "size", required = false) @Min(1) @Max(100) Integer size,
+			@RequestParam(value = "countryCode", required = false) String countryCode,
+			@RequestParam(value = "ageVerified", required = false) Boolean ageVerified,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
 		String effectiveRequestId = requestId(requestId);
-		SearchResponse response = searchService.search(query, page, size);
+		SearchResponse response = searchService.search(query, page, size, countryCode, ageVerified);
 		return ResponseEntity.ok(new ApiSuccessResponse<>(response, new ApiMeta(effectiveRequestId, Instant.now())));
 	}
 

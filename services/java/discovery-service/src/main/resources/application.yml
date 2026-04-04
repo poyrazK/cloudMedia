@@ -22,3 +22,7 @@ cloudmedia:
 
 server:
   port: 8085
+
+policy:
+  service:
+    base-url: http://localhost:8084

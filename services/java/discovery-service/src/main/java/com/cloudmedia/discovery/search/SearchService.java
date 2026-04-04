@@ -1,5 +1,10 @@
 package com.cloudmedia.discovery.search;
 
+import com.cloudmedia.discovery.error.ApiException;
+import com.cloudmedia.discovery.policy.PolicyEvaluationClient;
+import com.cloudmedia.discovery.policy.PolicyEvaluationException;
+import java.util.List;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,14 +24,19 @@ public class SearchService {
 
 	private final SearchIndexReader searchIndexReader;
 
-	public SearchService(SearchIndexReader searchIndexReader) {
+	private final PolicyEvaluationClient policyEvaluationClient;
+
+	public SearchService(SearchIndexReader searchIndexReader, PolicyEvaluationClient policyEvaluationClient) {
 		this.searchIndexReader = searchIndexReader;
+		this.policyEvaluationClient = policyEvaluationClient;
 	}
 
-	public SearchResponse search(String query, Integer page, Integer size) {
+	public SearchResponse search(String query, Integer page, Integer size, String countryCode, Boolean ageVerified) {
 		int resolvedPage = page == null ? DEFAULT_PAGE : Math.max(page, 0);
 		int resolvedSize = size == null ? DEFAULT_SIZE : Math.min(Math.max(size, MIN_SIZE), MAX_SIZE);
-		return searchIndexReader.search(query, resolvedPage, resolvedSize);
+		SearchResponse searchResponse = searchIndexReader.search(query, resolvedPage, resolvedSize);
+		List<SearchResultItem> filteredItems = filterByPolicy(searchResponse.items(), countryCode, ageVerified);
+		return new SearchResponse(filteredItems, searchResponse.page(), searchResponse.size(), filteredItems.size());
 	}
 
 	public AutocompleteResponse autocomplete(String query, Integer size) {
@@ -34,5 +44,17 @@ public class SearchService {
 				? DEFAULT_AUTOCOMPLETE_SIZE
 				: Math.min(Math.max(size, MIN_SIZE), MAX_AUTOCOMPLETE_SIZE);
 		return searchIndexReader.autocomplete(query, resolvedSize);
+	}
+
+	private List<SearchResultItem> filterByPolicy(List<SearchResultItem> items, String countryCode,
+			Boolean ageVerified) {
+		try {
+			return items.stream().filter(
+					item -> policyEvaluationClient.evaluate(item.contentId(), countryCode, ageVerified).allowed())
+					.toList();
+		} catch (PolicyEvaluationException exception) {
+			throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "POLICY_SERVICE_UNAVAILABLE",
+					"Policy evaluation is temporarily unavailable", null);
+		}
 	}
 }

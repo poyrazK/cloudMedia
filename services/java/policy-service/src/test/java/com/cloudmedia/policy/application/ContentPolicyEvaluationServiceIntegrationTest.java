@@ -46,6 +46,17 @@ class ContentPolicyEvaluationServiceIntegrationTest {
 	}
 
 	@Test
+	void evaluateDeniesHiddenContent() {
+		savePolicy("cnt_hidden", true, "TR", "US", ModerationState.HIDDEN);
+
+		var response = contentPolicyService.evaluateContentPolicy("cnt_hidden",
+				new EvaluateContentPolicyRequest("TR", true));
+
+		assertFalse(response.allowed());
+		assertEquals(List.of("MODERATION_HIDDEN"), response.reasonCodes());
+	}
+
+	@Test
 	void evaluateDeniesAgeRestrictedContentWithoutVerification() {
 		savePolicy("cnt_3", true, "", "", ModerationState.VISIBLE);
 

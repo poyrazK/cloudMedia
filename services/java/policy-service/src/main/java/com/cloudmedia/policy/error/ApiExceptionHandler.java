@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -48,6 +49,12 @@ public class ApiExceptionHandler {
 		ApiMeta responseMeta = exception.getMeta() != null ? exception.getMeta() : meta();
 		return ResponseEntity.status(exception.getStatus()).body(new ApiErrorResponse(
 				new ApiError(exception.getCode(), exception.getMessage(), Map.of()), responseMeta));
+	}
+
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<ApiErrorResponse> handleUnreadableBody(HttpMessageNotReadableException exception) {
+		return ResponseEntity.badRequest().body(
+				new ApiErrorResponse(new ApiError("VALIDATION_ERROR", "Malformed request body", Map.of()), meta()));
 	}
 
 	@ExceptionHandler(Exception.class)

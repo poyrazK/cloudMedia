@@ -155,6 +155,8 @@ This document defines the MVP API contract groups, standards, and core request/r
 
 ### `PATCH /v1/policy/content/{content_id}`
 - Updates age restriction, geo allow/block rules
+- Request supports partial upsert of `ageRestricted`, `geoAllowList`, and `geoBlockList`
+- Omitted fields remain unchanged; empty geo lists clear that specific list
 
 ### `PATCH /v1/moderation/content/{content_id}`
 - Applies moderation state (visible, hidden, removed)

@@ -18,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ContentPolicyService {
 
+	private static final int GEO_LIST_MAX_LENGTH = 512;
+
 	private final ContentPolicyRepository contentPolicyRepository;
 
 	public ContentPolicyService(ContentPolicyRepository contentPolicyRepository) {
@@ -26,23 +28,29 @@ public class ContentPolicyService {
 
 	@Transactional
 	public ContentPolicyResponse updateContentPolicy(String contentId, UpdateContentPolicyRequest request) {
+		ContentPolicyEntity entity = contentPolicyRepository.findById(contentId).orElseGet(() -> newEntity(contentId));
 		List<String> normalizedAllowList = request.geoAllowList() != null
 				? normalizeCodes(request.geoAllowList())
 				: null;
 		List<String> normalizedBlockList = request.geoBlockList() != null
 				? normalizeCodes(request.geoBlockList())
 				: null;
-		validateNoOverlap(normalizedAllowList, normalizedBlockList);
+		List<String> effectiveAllowList = normalizedAllowList != null
+				? normalizedAllowList
+				: parseCodes(entity.getGeoAllowList());
+		List<String> effectiveBlockList = normalizedBlockList != null
+				? normalizedBlockList
+				: parseCodes(entity.getGeoBlockList());
+		validateNoOverlap(effectiveAllowList, effectiveBlockList);
 
-		ContentPolicyEntity entity = contentPolicyRepository.findById(contentId).orElseGet(() -> newEntity(contentId));
 		if (request.ageRestricted() != null) {
 			entity.setAgeRestricted(request.ageRestricted());
 		}
 		if (normalizedAllowList != null) {
-			entity.setGeoAllowList(serializeCodes(normalizedAllowList));
+			entity.setGeoAllowList(serializeCodesWithGuard(normalizedAllowList));
 		}
 		if (normalizedBlockList != null) {
-			entity.setGeoBlockList(serializeCodes(normalizedBlockList));
+			entity.setGeoBlockList(serializeCodesWithGuard(normalizedBlockList));
 		}
 
 		return toResponse(contentPolicyRepository.save(entity));
@@ -85,6 +93,15 @@ public class ContentPolicyService {
 
 	private String serializeCodes(List<String> codes) {
 		return String.join(",", codes);
+	}
+
+	private String serializeCodesWithGuard(List<String> codes) {
+		String serializedCodes = serializeCodes(codes);
+		if (serializedCodes.length() > GEO_LIST_MAX_LENGTH) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "POLICY_GEO_LIST_TOO_LARGE",
+					"Geo policy list exceeds maximum supported length", null);
+		}
+		return serializedCodes;
 	}
 
 	private List<String> parseCodes(String serializedCodes) {

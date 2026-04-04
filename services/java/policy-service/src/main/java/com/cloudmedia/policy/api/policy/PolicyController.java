@@ -1,6 +1,8 @@
 package com.cloudmedia.policy.api.policy;
 
 import com.cloudmedia.policy.api.policy.dto.ContentPolicyResponse;
+import com.cloudmedia.policy.api.policy.dto.ContentPolicyDecisionResponse;
+import com.cloudmedia.policy.api.policy.dto.EvaluateContentPolicyRequest;
 import com.cloudmedia.policy.api.policy.dto.UpdateContentPolicyRequest;
 import com.cloudmedia.policy.api.response.ApiMeta;
 import com.cloudmedia.policy.api.response.ApiSuccessResponse;
@@ -11,6 +13,7 @@ import java.time.Instant;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -34,8 +37,22 @@ public class PolicyController {
 			@PathVariable("contentId") @NotBlank String contentId,
 			@Valid @RequestBody UpdateContentPolicyRequest request,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
-		String effectiveRequestId = requestId != null && !requestId.isBlank() ? requestId : "req_" + UUID.randomUUID();
+		String effectiveRequestId = resolveRequestId(requestId);
 		ContentPolicyResponse response = contentPolicyService.updateContentPolicy(contentId, request);
 		return ResponseEntity.ok(new ApiSuccessResponse<>(response, new ApiMeta(effectiveRequestId, Instant.now())));
+	}
+
+	@PostMapping("/content/{contentId}/evaluate")
+	public ResponseEntity<ApiSuccessResponse<ContentPolicyDecisionResponse>> evaluateContentPolicy(
+			@PathVariable("contentId") @NotBlank String contentId,
+			@Valid @RequestBody EvaluateContentPolicyRequest request,
+			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
+		String effectiveRequestId = resolveRequestId(requestId);
+		ContentPolicyDecisionResponse response = contentPolicyService.evaluateContentPolicy(contentId, request);
+		return ResponseEntity.ok(new ApiSuccessResponse<>(response, new ApiMeta(effectiveRequestId, Instant.now())));
+	}
+
+	private String resolveRequestId(String requestId) {
+		return requestId != null && !requestId.isBlank() ? requestId : "req_" + UUID.randomUUID();
 	}
 }

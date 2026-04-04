@@ -1,6 +1,8 @@
 package com.cloudmedia.policy.application;
 
 import com.cloudmedia.policy.api.policy.dto.ContentPolicyResponse;
+import com.cloudmedia.policy.api.policy.dto.ContentPolicyDecisionResponse;
+import com.cloudmedia.policy.api.policy.dto.EvaluateContentPolicyRequest;
 import com.cloudmedia.policy.api.policy.dto.UpdateContentPolicyRequest;
 import com.cloudmedia.policy.api.policy.dto.UpdateModerationStateRequest;
 import com.cloudmedia.policy.error.ApiException;
@@ -64,6 +66,41 @@ public class ContentPolicyService {
 		return toResponse(contentPolicyRepository.save(entity));
 	}
 
+	@Transactional(readOnly = true)
+	public ContentPolicyDecisionResponse evaluateContentPolicy(String contentId, EvaluateContentPolicyRequest request) {
+		if (request == null) {
+			throw new IllegalArgumentException("request must not be null");
+		}
+		ContentPolicyEntity entity = contentPolicyRepository.findById(contentId).orElseGet(() -> newEntity(contentId));
+		List<String> reasonCodes = new ArrayList<>();
+		List<String> geoAllowList = parseCodes(entity.getGeoAllowList());
+		List<String> geoBlockList = parseCodes(entity.getGeoBlockList());
+		String countryCode = normalizeCountryCode(request.countryCode());
+		boolean ageVerified = Boolean.TRUE.equals(request.ageVerified());
+
+		if (entity.getModerationState() == ModerationState.REMOVED) {
+			reasonCodes.add("MODERATION_REMOVED");
+		} else if (entity.getModerationState() == ModerationState.HIDDEN) {
+			reasonCodes.add("MODERATION_HIDDEN");
+		}
+
+		if (reasonCodes.isEmpty() && entity.isAgeRestricted() && !ageVerified) {
+			reasonCodes.add("AGE_RESTRICTED");
+		}
+
+		if (reasonCodes.isEmpty() && countryCode != null && geoBlockList.contains(countryCode)) {
+			reasonCodes.add("GEO_BLOCKED");
+		}
+
+		if (reasonCodes.isEmpty() && !geoAllowList.isEmpty()
+				&& (countryCode == null || !geoAllowList.contains(countryCode))) {
+			reasonCodes.add("GEO_NOT_ALLOWED");
+		}
+
+		return new ContentPolicyDecisionResponse(contentId, reasonCodes.isEmpty(), List.copyOf(reasonCodes),
+				entity.getModerationState(), entity.isAgeRestricted(), geoAllowList, geoBlockList);
+	}
+
 	private ContentPolicyEntity newEntity(String contentId) {
 		ContentPolicyEntity entity = new ContentPolicyEntity();
 		entity.setContentId(contentId);
@@ -85,6 +122,10 @@ public class ContentPolicyService {
 			normalized.add(code.toUpperCase(Locale.ROOT));
 		}
 		return new ArrayList<>(normalized);
+	}
+
+	private String normalizeCountryCode(String countryCode) {
+		return countryCode == null || countryCode.isBlank() ? null : countryCode.toUpperCase(Locale.ROOT);
 	}
 
 	private void validateNoOverlap(List<String> allowList, List<String> blockList) {

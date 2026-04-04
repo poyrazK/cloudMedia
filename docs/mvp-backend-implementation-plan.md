@@ -491,10 +491,12 @@ Current completed slices:
 - Discovery-service autocomplete API:
   - `GET /v1/search/autocomplete` serves title suggestions from indexed content
   - autocomplete keeps a small size limit and still defers advanced filters
+- Policy-service evaluation API:
+  - `POST /v1/policy/content/{content_id}/evaluate` returns reusable policy decisions
+  - evaluates moderation, age restriction, and geo policy in one decision flow
 
 Next active slice:
 
-- Policy-service moderation API:
-  - add `PATCH /v1/moderation/content/{content_id}` for moderation state updates
-  - preserve existing age/geo policy fields when moderation changes
-  - keep policy evaluation and downstream enforcement for a follow-up PR
+- Policy enforcement integration:
+  - wire policy evaluation into playback, search, and discovery home filtering
+  - keep downstream enforcement wiring as follow-up PRs per service

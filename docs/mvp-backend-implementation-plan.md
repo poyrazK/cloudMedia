@@ -494,7 +494,7 @@ Current completed slices:
 
 Next active slice:
 
-- Policy-service moderation API:
-  - add `PATCH /v1/moderation/content/{content_id}` for moderation state updates
-  - preserve existing age/geo policy fields when moderation changes
-  - keep policy evaluation and downstream enforcement for a follow-up PR
+- Policy-service evaluation API:
+  - add `POST /v1/policy/content/{content_id}/evaluate` for reusable policy decisions
+  - evaluate moderation, age restriction, and geo policy in one decision flow
+  - keep downstream enforcement wiring for playback and discovery follow-up PRs

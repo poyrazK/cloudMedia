@@ -163,6 +163,10 @@ This document defines the MVP API contract groups, standards, and core request/r
 - Request supports `moderationState` with values `VISIBLE`, `HIDDEN`, or `REMOVED`
 - Reuses the content policy record and preserves existing age/geo fields
 
+### `POST /v1/policy/content/{content_id}/evaluate`
+- Evaluates whether content is allowed for viewing/playback in a given request context
+- Request supports optional `countryCode` and optional `ageVerified`
+
 ### `GET /v1/moderation/comments/reports`
 - Lists reported comments for moderator queue
 

@@ -2,16 +2,21 @@ package com.cloudmedia.content.application.content;
 
 import com.cloudmedia.content.api.content.dto.ContentResponse;
 import com.cloudmedia.content.api.content.dto.CreateContentRequest;
+import com.cloudmedia.content.api.content.dto.PlaybackResponse;
 import com.cloudmedia.content.api.content.dto.UpdateContentRequest;
 import com.cloudmedia.content.error.ApiException;
+import com.cloudmedia.content.persistence.entity.ContentState;
 import com.cloudmedia.content.persistence.entity.ChannelEntity;
 import com.cloudmedia.content.persistence.entity.ContentEntity;
-import com.cloudmedia.content.persistence.entity.ContentState;
 import com.cloudmedia.content.persistence.entity.ContentVisibility;
 import com.cloudmedia.content.persistence.repository.ChannelMemberRepository;
 import com.cloudmedia.content.persistence.repository.ChannelRepository;
 import com.cloudmedia.content.persistence.repository.ContentRepository;
+import com.cloudmedia.content.policy.PolicyDecision;
+import com.cloudmedia.content.policy.PolicyEvaluationClient;
+import com.cloudmedia.content.policy.PolicyEvaluationException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,12 +28,14 @@ public class ContentService {
 	private final ContentRepository contentRepository;
 	private final ChannelRepository channelRepository;
 	private final ChannelMemberRepository channelMemberRepository;
+	private final PolicyEvaluationClient policyEvaluationClient;
 
 	public ContentService(ContentRepository contentRepository, ChannelRepository channelRepository,
-			ChannelMemberRepository channelMemberRepository) {
+			ChannelMemberRepository channelMemberRepository, PolicyEvaluationClient policyEvaluationClient) {
 		this.contentRepository = contentRepository;
 		this.channelRepository = channelRepository;
 		this.channelMemberRepository = channelMemberRepository;
+		this.policyEvaluationClient = policyEvaluationClient;
 	}
 
 	@Transactional
@@ -72,6 +79,34 @@ public class ContentService {
 		content.setUpdatedAt(LocalDateTime.now());
 
 		return toResponse(contentRepository.save(content));
+	}
+
+	@Transactional(readOnly = true)
+	public PlaybackResponse getPlayback(String contentId, String countryCode, Boolean ageVerified) {
+		ContentEntity content = contentRepository.findById(contentId).orElseThrow(
+				() -> new ApiException(HttpStatus.NOT_FOUND, "CONTENT_NOT_FOUND", "Content not found", null));
+		if (content.getState() != ContentState.PUBLISHED || !content.isPlaybackReady()) {
+			throw new ApiException(HttpStatus.CONFLICT, "CONTENT_NOT_PLAYABLE", "Content is not ready for playback",
+					null);
+		}
+
+		PolicyDecision decision;
+		try {
+			decision = policyEvaluationClient.evaluate(contentId, countryCode, ageVerified);
+		} catch (PolicyEvaluationException exception) {
+			throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "POLICY_SERVICE_UNAVAILABLE",
+					"Policy evaluation is temporarily unavailable", null);
+		}
+
+		if (!decision.allowed()) {
+			throw new ApiException(HttpStatus.FORBIDDEN, "CONTENT_POLICY_DENIED", "Content is blocked by policy", null);
+		}
+
+		return new PlaybackResponse(content.getId(), manifestUrlFor(content.getId()), List.of("1080p", "4K"));
+	}
+
+	private String manifestUrlFor(String contentId) {
+		return "https://cdn.cloudmedia.local/v1/content/" + contentId + "/master.m3u8";
 	}
 
 	private void assertMember(String channelId, String userId) {

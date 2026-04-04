@@ -32,8 +32,12 @@ public class HomeFeedService {
 	public HomeFeedResponse homeFeed(String userId, Integer size, String countryCode, Boolean ageVerified) {
 		int resolvedSize = size == null ? DEFAULT_SIZE : Math.min(Math.max(size, MIN_SIZE), MAX_SIZE);
 		HomeFeedCandidates candidates = searchIndexReader.homeFeed(userId, resolvedSize);
-		List<HomeFeedItem> blended = blend(candidates, resolvedSize);
-		return new HomeFeedResponse(filterByPolicy(blended, countryCode, ageVerified), resolvedSize);
+		HomeFeedCandidates policyFilteredCandidates = new HomeFeedCandidates(
+				filterByPolicy(candidates.followed(), countryCode, ageVerified),
+				filterByPolicy(candidates.trending(), countryCode, ageVerified),
+				filterByPolicy(candidates.fresh(), countryCode, ageVerified),
+				filterByPolicy(candidates.similar(), countryCode, ageVerified));
+		return new HomeFeedResponse(blend(policyFilteredCandidates, resolvedSize), resolvedSize);
 	}
 
 	private List<HomeFeedItem> blend(HomeFeedCandidates candidates, int size) {

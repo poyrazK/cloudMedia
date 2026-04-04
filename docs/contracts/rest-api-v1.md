@@ -134,6 +134,7 @@ This document defines the MVP API contract groups, standards, and core request/r
 - MVP params: optional `userId`; optional integer `size` with min `1`, default `20`, max `50`; optional `countryCode` (ISO 3166-1 alpha-2 uppercase, e.g. `US`); optional `ageVerified`
 - Returns a generic blended feed when `userId` is absent
 - Filters out policy-blocked items from the blended feed
+- Returns `503 POLICY_SERVICE_UNAVAILABLE` when policy evaluation fails
 
 ### `GET /v1/discovery/trending`
 - Region-level trending feed
@@ -187,3 +188,4 @@ This document defines the MVP API contract groups, standards, and core request/r
 - `409`: conflict/idempotency collision
 - `429`: rate limit exceeded
 - `500`: internal error
+- `503`: dependency unavailable (e.g. `POLICY_SERVICE_UNAVAILABLE` on `GET /v1/discovery/home`)

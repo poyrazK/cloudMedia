@@ -1,6 +1,8 @@
 package com.cloudmedia.discovery.discovery;
 
 import com.cloudmedia.discovery.search.AutocompleteResponse;
+import com.cloudmedia.discovery.policy.PolicyDecision;
+import com.cloudmedia.discovery.policy.PolicyEvaluationClient;
 import com.cloudmedia.discovery.search.SearchIndexReader;
 import com.cloudmedia.discovery.search.SearchResponse;
 import java.time.Instant;
@@ -14,11 +16,13 @@ class HomeFeedServiceTest {
 	@Test
 	void homeFeedUsesDefaultSizeAndBlendsDedupedItems() {
 		RecordingSearchIndexReader reader = new RecordingSearchIndexReader();
-		HomeFeedService service = new HomeFeedService(reader);
+		RecordingPolicyEvaluationClient policyClient = new RecordingPolicyEvaluationClient();
+		HomeFeedService service = new HomeFeedService(reader, policyClient);
 
-		HomeFeedResponse response = service.homeFeed(null, null);
+		HomeFeedResponse response = service.homeFeed(null, null, "US", true);
 
 		assertEquals(20, reader.size);
+		assertEquals(List.of("follow-1", "trend-1", "similar-1"), policyClient.recordedContentIds);
 		assertEquals(3, response.items().size());
 		assertEquals(FeedSourceBucket.FOLLOWED, response.items().get(0).sourceBucket());
 		assertEquals(FeedSourceBucket.TRENDING, response.items().get(1).sourceBucket());
@@ -27,14 +31,26 @@ class HomeFeedServiceTest {
 	@Test
 	void homeFeedClampsSizeAndAvoidsDuplicateContentIds() {
 		RecordingSearchIndexReader reader = new RecordingSearchIndexReader();
-		HomeFeedService service = new HomeFeedService(reader);
+		HomeFeedService service = new HomeFeedService(reader, new RecordingPolicyEvaluationClient());
 
-		HomeFeedResponse response = service.homeFeed("user-1", 2);
+		HomeFeedResponse response = service.homeFeed("user-1", 2, null, null);
 
 		assertEquals("user-1", reader.userId);
 		assertEquals(2, response.size());
 		assertEquals(2, response.items().size());
 		assertEquals(List.of("follow-1", "trend-1"), response.items().stream().map(HomeFeedItem::contentId).toList());
+	}
+
+	@Test
+	void homeFeedFiltersPolicyBlockedItems() {
+		RecordingSearchIndexReader reader = new RecordingSearchIndexReader();
+		RecordingPolicyEvaluationClient policyClient = new RecordingPolicyEvaluationClient();
+		policyClient.blockedContentIds = List.of("trend-1");
+		HomeFeedService service = new HomeFeedService(reader, policyClient);
+
+		HomeFeedResponse response = service.homeFeed("user-1", 3, "DE", true);
+
+		assertEquals(List.of("follow-1", "similar-1"), response.items().stream().map(HomeFeedItem::contentId).toList());
 	}
 
 	static class RecordingSearchIndexReader implements SearchIndexReader {
@@ -68,6 +84,20 @@ class HomeFeedServiceTest {
 		private HomeFeedItem item(String contentId, FeedSourceBucket bucket) {
 			return new HomeFeedItem(contentId, "chn-1", contentId, "desc", "VIDEO", "PUBLIC",
 					Instant.parse("2026-03-14T12:00:00Z"), bucket);
+		}
+	}
+
+	static class RecordingPolicyEvaluationClient implements PolicyEvaluationClient {
+
+		private final List<String> recordedContentIds = new java.util.ArrayList<>();
+
+		private List<String> blockedContentIds = List.of();
+
+		@Override
+		public PolicyDecision evaluate(String contentId, String countryCode, Boolean ageVerified) {
+			recordedContentIds.add(contentId);
+			boolean allowed = !blockedContentIds.contains(contentId);
+			return new PolicyDecision(allowed, allowed ? List.of() : List.of("CONTENT_BLOCKED"));
 		}
 	}
 }

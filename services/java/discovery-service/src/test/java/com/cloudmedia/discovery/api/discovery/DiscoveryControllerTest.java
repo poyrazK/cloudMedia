@@ -45,6 +45,12 @@ class DiscoveryControllerTest {
 				.andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
 	}
 
+	@Test
+	void homeValidatesCountryCodeFormat() throws Exception {
+		mockMvc.perform(get("/v1/discovery/home").param("countryCode", "usa")).andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+	}
+
 	@TestConfiguration
 	static class HomeFeedTestConfiguration {
 
@@ -66,9 +72,10 @@ class DiscoveryControllerTest {
 				public HomeFeedCandidates homeFeed(String userId, int size) {
 					return HomeFeedCandidates.empty();
 				}
-			}) {
+			}, (contentId, countryCode, ageVerified) -> new com.cloudmedia.discovery.policy.PolicyDecision(true,
+					List.of())) {
 				@Override
-				public HomeFeedResponse homeFeed(String userId, Integer size) {
+				public HomeFeedResponse homeFeed(String userId, Integer size, String countryCode, Boolean ageVerified) {
 					return new HomeFeedResponse(List.of(new HomeFeedItem("cnt_1", "chn_1", "Title", "Description",
 							"VIDEO", "PUBLIC", Instant.parse("2026-03-14T12:00:00Z"), FeedSourceBucket.TRENDING)), 2);
 				}

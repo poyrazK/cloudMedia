@@ -81,6 +81,18 @@ class PolicyControllerTest {
 				.andExpect(jsonPath("$.error.code").value("POLICY_GEO_CONFLICT"));
 	}
 
+	@Test
+	void patchRejectsOverlapAgainstPersistedValues() throws Exception {
+		savePolicy("cnt_6", false, "TR,DE", "");
+
+		mockMvc.perform(patch("/v1/policy/content/cnt_6").contentType(MediaType.APPLICATION_JSON).content("""
+				{
+				  "geoBlockList": ["TR"]
+				}
+				""")).andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("POLICY_GEO_CONFLICT"));
+	}
+
 	private void savePolicy(String contentId, boolean ageRestricted, String allowList, String blockList) {
 		ContentPolicyEntity entity = new ContentPolicyEntity();
 		entity.setContentId(contentId);

@@ -8,6 +8,7 @@ import com.cloudmedia.discovery.search.SearchService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
@@ -33,9 +34,11 @@ public class SearchController {
 	public ResponseEntity<ApiSuccessResponse<SearchResponse>> search(@RequestParam("q") @NotBlank String query,
 			@RequestParam(value = "page", required = false) @Min(0) Integer page,
 			@RequestParam(value = "size", required = false) @Min(1) @Max(100) Integer size,
+			@RequestParam(value = "countryCode", required = false) @Pattern(regexp = "^[A-Z]{2}$", message = "must be an ISO 3166-1 alpha-2 uppercase code") String countryCode,
+			@RequestParam(value = "ageVerified", required = false) Boolean ageVerified,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
 		String effectiveRequestId = requestId(requestId);
-		SearchResponse response = searchService.search(query, page, size);
+		SearchResponse response = searchService.search(query, page, size, countryCode, ageVerified);
 		return ResponseEntity.ok(new ApiSuccessResponse<>(response, new ApiMeta(effectiveRequestId, Instant.now())));
 	}
 

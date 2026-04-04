@@ -1,6 +1,8 @@
 package com.cloudmedia.discovery.api.search;
 
 import com.cloudmedia.discovery.discovery.HomeFeedCandidates;
+import com.cloudmedia.discovery.policy.PolicyDecision;
+import com.cloudmedia.discovery.policy.PolicyEvaluationClient;
 import com.cloudmedia.discovery.search.SearchIndexReader;
 import com.cloudmedia.discovery.search.SearchResponse;
 import com.cloudmedia.discovery.search.SearchResultItem;
@@ -45,6 +47,13 @@ class SearchControllerTest {
 	}
 
 	@Test
+	void searchFiltersPolicyBlockedItems() throws Exception {
+		mockMvc.perform(get("/v1/search").param("q", "blocked").param("countryCode", "US").param("ageVerified", "true"))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.data.items.length()").value(0))
+				.andExpect(jsonPath("$.data.total").value(0));
+	}
+
+	@Test
 	void autocompleteReturnsSuggestions() throws Exception {
 		mockMvc.perform(get("/v1/search/autocomplete").param("q", "cat").param("size", "3").header("X-Request-Id",
 				"req_autocomplete_1")).andExpect(status().isOk())
@@ -81,8 +90,12 @@ class SearchControllerTest {
 			return new SearchIndexReader() {
 				@Override
 				public SearchResponse search(String query, int page, int size) {
-					return new SearchResponse(List.of(new SearchResultItem("cnt_1", "chn_1", "Cats video", "Funny cats",
-							"VIDEO", "PUBLIC", Instant.parse("2026-03-14T12:00:00Z"))), page, size, 1);
+					List<SearchResultItem> items = "blocked".equals(query)
+							? List.of(new SearchResultItem("cnt_blocked", "chn_1", "Blocked", "Blocked by policy",
+									"VIDEO", "PUBLIC", Instant.parse("2026-03-14T12:00:00Z")))
+							: List.of(new SearchResultItem("cnt_1", "chn_1", "Cats video", "Funny cats", "VIDEO",
+									"PUBLIC", Instant.parse("2026-03-14T12:00:00Z")));
+					return new SearchResponse(items, page, size, items.size());
 				}
 
 				@Override
@@ -95,6 +108,15 @@ class SearchControllerTest {
 				public HomeFeedCandidates homeFeed(String userId, int size) {
 					return HomeFeedCandidates.empty();
 				}
+			};
+		}
+
+		@Bean
+		@Primary
+		PolicyEvaluationClient policyEvaluationClient() {
+			return (contentId, countryCode, ageVerified) -> {
+				boolean allowed = !"cnt_blocked".equals(contentId);
+				return new PolicyDecision(allowed, allowed ? List.of() : List.of("CONTENT_BLOCKED"));
 			};
 		}
 	}

@@ -36,7 +36,7 @@ public class SearchService {
 		int resolvedSize = size == null ? DEFAULT_SIZE : Math.min(Math.max(size, MIN_SIZE), MAX_SIZE);
 		SearchResponse searchResponse = searchIndexReader.search(query, resolvedPage, resolvedSize);
 		List<SearchResultItem> filteredItems = filterByPolicy(searchResponse.items(), countryCode, ageVerified);
-		return new SearchResponse(filteredItems, searchResponse.page(), searchResponse.size(), filteredItems.size());
+		return new SearchResponse(filteredItems, searchResponse.page(), searchResponse.size(), searchResponse.total());
 	}
 
 	public AutocompleteResponse autocomplete(String query, Integer size) {

@@ -37,7 +37,7 @@ public class PolicyController {
 			@PathVariable("contentId") @NotBlank String contentId,
 			@Valid @RequestBody UpdateContentPolicyRequest request,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
-		String effectiveRequestId = requestId != null && !requestId.isBlank() ? requestId : "req_" + UUID.randomUUID();
+		String effectiveRequestId = resolveRequestId(requestId);
 		ContentPolicyResponse response = contentPolicyService.updateContentPolicy(contentId, request);
 		return ResponseEntity.ok(new ApiSuccessResponse<>(response, new ApiMeta(effectiveRequestId, Instant.now())));
 	}
@@ -47,8 +47,12 @@ public class PolicyController {
 			@PathVariable("contentId") @NotBlank String contentId,
 			@Valid @RequestBody EvaluateContentPolicyRequest request,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
-		String effectiveRequestId = requestId != null && !requestId.isBlank() ? requestId : "req_" + UUID.randomUUID();
+		String effectiveRequestId = resolveRequestId(requestId);
 		ContentPolicyDecisionResponse response = contentPolicyService.evaluateContentPolicy(contentId, request);
 		return ResponseEntity.ok(new ApiSuccessResponse<>(response, new ApiMeta(effectiveRequestId, Instant.now())));
+	}
+
+	private String resolveRequestId(String requestId) {
+		return requestId != null && !requestId.isBlank() ? requestId : "req_" + UUID.randomUUID();
 	}
 }

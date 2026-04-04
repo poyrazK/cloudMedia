@@ -6,6 +6,7 @@ import com.cloudmedia.discovery.discovery.HomeFeedResponse;
 import com.cloudmedia.discovery.discovery.HomeFeedService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
@@ -31,9 +32,11 @@ public class DiscoveryController {
 	public ResponseEntity<ApiSuccessResponse<HomeFeedResponse>> home(
 			@RequestParam(value = "userId", required = false) String userId,
 			@RequestParam(value = "size", required = false) @Min(1) @Max(50) Integer size,
+			@RequestParam(value = "countryCode", required = false) @Pattern(regexp = "^[A-Z]{2}$", message = "must be an ISO 3166-1 alpha-2 uppercase code") String countryCode,
+			@RequestParam(value = "ageVerified", required = false) Boolean ageVerified,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
 		String effectiveRequestId = requestId(requestId);
-		HomeFeedResponse response = homeFeedService.homeFeed(userId, size);
+		HomeFeedResponse response = homeFeedService.homeFeed(userId, size, countryCode, ageVerified);
 		return ResponseEntity.ok(new ApiSuccessResponse<>(response, new ApiMeta(effectiveRequestId, Instant.now())));
 	}
 

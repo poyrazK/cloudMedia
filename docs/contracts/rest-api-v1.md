@@ -160,6 +160,8 @@ This document defines the MVP API contract groups, standards, and core request/r
 
 ### `PATCH /v1/moderation/content/{content_id}`
 - Applies moderation state (visible, hidden, removed)
+- Request supports `moderationState` with values `VISIBLE`, `HIDDEN`, or `REMOVED`
+- Reuses the content policy record and preserves existing age/geo fields
 
 ### `GET /v1/moderation/comments/reports`
 - Lists reported comments for moderator queue

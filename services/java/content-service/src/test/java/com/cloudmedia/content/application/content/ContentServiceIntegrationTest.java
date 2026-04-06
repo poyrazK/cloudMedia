@@ -132,6 +132,45 @@ class ContentServiceIntegrationTest {
 		assertEquals("CONTENT_NOT_PLAYABLE", exception.getCode());
 	}
 
+	@Test
+	void publishTransitionsDraftToPublishedWhenReady() {
+		ChannelEntity channel = saveChannel("channel-content-6", "content-channel-six");
+		saveMembership(channel, "publisher-1", ChannelMemberRole.OWNER);
+		ContentEntity content = saveContent(channel, "Ready draft", "desc", ContentVisibility.PRIVATE,
+				ContentState.DRAFT, true);
+
+		var published = contentService.publish(content.getId(), "publisher-1");
+
+		assertEquals(ContentState.PUBLISHED, published.state());
+		assertNotNull(published.publishedAt());
+	}
+
+	@Test
+	void publishRejectsWhenPlaybackNotReady() {
+		ChannelEntity channel = saveChannel("channel-content-7", "content-channel-seven");
+		saveMembership(channel, "publisher-2", ChannelMemberRole.ADMIN);
+		ContentEntity content = saveContent(channel, "Not ready", "desc", ContentVisibility.PRIVATE, ContentState.DRAFT,
+				false);
+
+		ApiException exception = assertThrows(ApiException.class,
+				() -> contentService.publish(content.getId(), "publisher-2"));
+
+		assertEquals("CONTENT_NOT_READY", exception.getCode());
+	}
+
+	@Test
+	void publishRejectsWhenStateIsNotDraft() {
+		ChannelEntity channel = saveChannel("channel-content-8", "content-channel-eight");
+		saveMembership(channel, "publisher-3", ChannelMemberRole.ADMIN);
+		ContentEntity content = saveContent(channel, "Already published", "desc", ContentVisibility.PUBLIC,
+				ContentState.PUBLISHED, true);
+
+		ApiException exception = assertThrows(ApiException.class,
+				() -> contentService.publish(content.getId(), "publisher-3"));
+
+		assertEquals("CONTENT_STATE_INVALID", exception.getCode());
+	}
+
 	private ChannelEntity saveChannel(String id, String slug) {
 		ChannelEntity channel = new ChannelEntity();
 		channel.setId(id);

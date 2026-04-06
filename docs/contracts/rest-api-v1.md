@@ -85,8 +85,11 @@ This document defines the MVP API contract groups, standards, and core request/r
 - Mutable fields (MVP): `title`, `description`, `visibility`
 
 ### `POST /v1/content/{content_id}/publish`
-- Idempotent publish request
-- Enforces moderation/policy preconditions
+- Publishes content from `DRAFT` to `PUBLISHED`
+- Request fields (MVP): `userId`
+- Requires `playbackReady=true`
+- Returns `409 CONTENT_NOT_READY` when playback is not ready
+- Returns `409 CONTENT_STATE_INVALID` when state is not `DRAFT`
 
 ### `GET /v1/content/{content_id}/playback`
 - Returns signed manifest URL and available renditions

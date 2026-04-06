@@ -81,6 +81,28 @@ public class ContentService {
 		return toResponse(contentRepository.save(content));
 	}
 
+	@Transactional
+	public ContentResponse publish(String contentId, String userId) {
+		ContentEntity content = contentRepository.findById(contentId).orElseThrow(
+				() -> new ApiException(HttpStatus.NOT_FOUND, "CONTENT_NOT_FOUND", "Content not found", null));
+		assertMember(content.getChannel().getId(), userId);
+
+		if (content.getState() != ContentState.DRAFT) {
+			throw new ApiException(HttpStatus.CONFLICT, "CONTENT_STATE_INVALID",
+					"Content can only be published from draft state", null);
+		}
+		if (!content.isPlaybackReady()) {
+			throw new ApiException(HttpStatus.CONFLICT, "CONTENT_NOT_READY", "Content is not ready for publish", null);
+		}
+
+		LocalDateTime now = LocalDateTime.now();
+		content.setState(ContentState.PUBLISHED);
+		content.setPublishedAt(now);
+		content.setUpdatedAt(now);
+
+		return toResponse(contentRepository.save(content));
+	}
+
 	@Transactional(readOnly = true)
 	public PlaybackResponse getPlayback(String contentId, String countryCode, Boolean ageVerified) {
 		ContentEntity content = contentRepository.findById(contentId).orElseThrow(

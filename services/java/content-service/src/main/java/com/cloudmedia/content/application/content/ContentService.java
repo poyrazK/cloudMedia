@@ -103,6 +103,23 @@ public class ContentService {
 		return toResponse(contentRepository.save(content));
 	}
 
+	@Transactional
+	public ContentResponse unpublish(String contentId, String userId) {
+		ContentEntity content = contentRepository.findById(contentId).orElseThrow(
+				() -> new ApiException(HttpStatus.NOT_FOUND, "CONTENT_NOT_FOUND", "Content not found", null));
+		assertMember(content.getChannel().getId(), userId);
+
+		if (content.getState() != ContentState.PUBLISHED) {
+			throw new ApiException(HttpStatus.CONFLICT, "CONTENT_STATE_INVALID",
+					"Content can only be unpublished from published state", null);
+		}
+
+		content.setState(ContentState.PRIVATE);
+		content.setUpdatedAt(LocalDateTime.now());
+
+		return toResponse(contentRepository.save(content));
+	}
+
 	@Transactional(readOnly = true)
 	public PlaybackResponse getPlayback(String contentId, String countryCode, Boolean ageVerified) {
 		ContentEntity content = contentRepository.findById(contentId).orElseThrow(

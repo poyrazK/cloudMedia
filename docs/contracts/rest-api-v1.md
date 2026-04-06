@@ -91,6 +91,11 @@ This document defines the MVP API contract groups, standards, and core request/r
 - Returns `409 CONTENT_NOT_READY` when playback is not ready
 - Returns `409 CONTENT_STATE_INVALID` when state is not `DRAFT`
 
+### `POST /v1/content/{content_id}/unpublish`
+- Unpublishes content from `PUBLISHED` to `PRIVATE`
+- Request fields (MVP): `userId`
+- Returns `409 CONTENT_STATE_INVALID` when state is not `PUBLISHED`
+
 ### `GET /v1/content/{content_id}/playback`
 - Returns signed manifest URL and available renditions
 - Applies age/geo/moderation checks

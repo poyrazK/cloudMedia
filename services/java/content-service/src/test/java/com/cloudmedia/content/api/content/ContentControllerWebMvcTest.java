@@ -181,6 +181,55 @@ class ContentControllerWebMvcTest {
 				.andExpect(jsonPath("$.error.code").value("CONTENT_NOT_PLAYABLE"));
 	}
 
+	@Test
+	void publishReturnsPublishedContent() throws Exception {
+		ChannelEntity channel = saveChannel("channel-8", "theta-channel");
+		saveMembership(channel, "user-8", ChannelMemberRole.ADMIN);
+		ContentEntity content = saveContent(channel, "Draft", "Ready", ContentVisibility.PRIVATE, ContentState.DRAFT,
+				true);
+
+		mockMvc.perform(post("/v1/content/{contentId}/publish", content.getId()).contentType(MediaType.APPLICATION_JSON)
+				.header("X-Request-Id", "req_content_publish_1").content("""
+						{
+						  "userId": "user-8"
+						}
+						""")).andExpect(status().isOk()).andExpect(jsonPath("$.data.id").value(content.getId()))
+				.andExpect(jsonPath("$.data.state").value("PUBLISHED"))
+				.andExpect(jsonPath("$.data.publishedAt").exists())
+				.andExpect(jsonPath("$.meta.requestId").value("req_content_publish_1"));
+	}
+
+	@Test
+	void publishReturnsConflictWhenNotPlaybackReady() throws Exception {
+		ChannelEntity channel = saveChannel("channel-9", "iota-channel");
+		saveMembership(channel, "user-9", ChannelMemberRole.OWNER);
+		ContentEntity content = saveContent(channel, "Draft", "Not ready", ContentVisibility.PRIVATE,
+				ContentState.DRAFT, false);
+
+		mockMvc.perform(post("/v1/content/{contentId}/publish", content.getId()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+						  "userId": "user-9"
+						}
+						""")).andExpect(status().isConflict())
+				.andExpect(jsonPath("$.error.code").value("CONTENT_NOT_READY"));
+	}
+
+	@Test
+	void publishReturnsForbiddenForNonMember() throws Exception {
+		ChannelEntity channel = saveChannel("channel-10", "kappa-channel");
+		ContentEntity content = saveContent(channel, "Draft", "Ready", ContentVisibility.PRIVATE, ContentState.DRAFT,
+				true);
+
+		mockMvc.perform(post("/v1/content/{contentId}/publish", content.getId()).contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+						  "userId": "user-10"
+						}
+						""")).andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.error.code").value("CHANNEL_ACCESS_DENIED"));
+	}
+
 	private ChannelEntity saveChannel(String id, String slug) {
 		ChannelEntity channel = new ChannelEntity();
 		channel.setId(id);

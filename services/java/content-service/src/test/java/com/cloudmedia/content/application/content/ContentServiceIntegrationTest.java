@@ -171,6 +171,33 @@ class ContentServiceIntegrationTest {
 		assertEquals("CONTENT_STATE_INVALID", exception.getCode());
 	}
 
+	@Test
+	void unpublishTransitionsPublishedToPrivate() {
+		ChannelEntity channel = saveChannel("channel-content-9", "content-channel-nine");
+		saveMembership(channel, "publisher-4", ChannelMemberRole.OWNER);
+		ContentEntity content = saveContent(channel, "Published", "desc", ContentVisibility.PUBLIC,
+				ContentState.PUBLISHED, true);
+		LocalDateTime publishedAtBefore = content.getPublishedAt();
+
+		var unpublished = contentService.unpublish(content.getId(), "publisher-4");
+
+		assertEquals(ContentState.PRIVATE, unpublished.state());
+		assertEquals(publishedAtBefore, unpublished.publishedAt());
+	}
+
+	@Test
+	void unpublishRejectsWhenStateIsNotPublished() {
+		ChannelEntity channel = saveChannel("channel-content-10", "content-channel-ten");
+		saveMembership(channel, "publisher-5", ChannelMemberRole.ADMIN);
+		ContentEntity content = saveContent(channel, "Draft", "desc", ContentVisibility.PRIVATE, ContentState.DRAFT,
+				true);
+
+		ApiException exception = assertThrows(ApiException.class,
+				() -> contentService.unpublish(content.getId(), "publisher-5"));
+
+		assertEquals("CONTENT_STATE_INVALID", exception.getCode());
+	}
+
 	private ChannelEntity saveChannel(String id, String slug) {
 		ChannelEntity channel = new ChannelEntity();
 		channel.setId(id);

@@ -2,6 +2,8 @@ package com.cloudmedia.content.application.content;
 
 import com.cloudmedia.content.api.content.dto.CreateContentRequest;
 import com.cloudmedia.content.api.content.dto.UpdateContentRequest;
+import com.cloudmedia.content.events.ContentEventPublisher;
+import com.cloudmedia.content.events.ContentPublishedPayload;
 import com.cloudmedia.content.error.ApiException;
 import com.cloudmedia.content.persistence.entity.ChannelEntity;
 import com.cloudmedia.content.persistence.entity.ChannelMemberEntity;
@@ -31,6 +33,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
@@ -51,6 +57,9 @@ class ContentServiceIntegrationTest {
 
 	@MockBean
 	private PolicyEvaluationClient policyEvaluationClient;
+
+	@MockBean
+	private ContentEventPublisher contentEventPublisher;
 
 	@Test
 	void createDraftAppliesDefaultStateAndFlags() {
@@ -143,6 +152,10 @@ class ContentServiceIntegrationTest {
 
 		assertEquals(ContentState.PUBLISHED, published.state());
 		assertNotNull(published.publishedAt());
+		verify(contentEventPublisher).publishContentPublished(
+				eq(new ContentPublishedPayload(content.getId(), channel.getId(), "Ready draft", "desc",
+						ContentType.VIDEO.name(), ContentVisibility.PRIVATE.name(), published.publishedAt())),
+				isNull());
 	}
 
 	@Test
@@ -156,6 +169,7 @@ class ContentServiceIntegrationTest {
 				() -> contentService.publish(content.getId(), "publisher-2"));
 
 		assertEquals("CONTENT_NOT_READY", exception.getCode());
+		verify(contentEventPublisher, never()).publishContentPublished(any(), any());
 	}
 
 	@Test
@@ -169,6 +183,7 @@ class ContentServiceIntegrationTest {
 				() -> contentService.publish(content.getId(), "publisher-3"));
 
 		assertEquals("CONTENT_STATE_INVALID", exception.getCode());
+		verify(contentEventPublisher, never()).publishContentPublished(any(), any());
 	}
 
 	@Test

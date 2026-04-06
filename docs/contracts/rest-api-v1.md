@@ -88,6 +88,7 @@ This document defines the MVP API contract groups, standards, and core request/r
 - Publishes content from `DRAFT` to `PUBLISHED`
 - Request fields (MVP): `userId`
 - Requires `playbackReady=true`
+- Emits `content.published` event on success
 - Returns `409 CONTENT_NOT_READY` when playback is not ready
 - Returns `409 CONTENT_STATE_INVALID` when state is not `DRAFT`
 

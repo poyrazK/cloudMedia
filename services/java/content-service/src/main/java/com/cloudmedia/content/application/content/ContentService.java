@@ -4,6 +4,8 @@ import com.cloudmedia.content.api.content.dto.ContentResponse;
 import com.cloudmedia.content.api.content.dto.CreateContentRequest;
 import com.cloudmedia.content.api.content.dto.PlaybackResponse;
 import com.cloudmedia.content.api.content.dto.UpdateContentRequest;
+import com.cloudmedia.content.events.ContentEventPublisher;
+import com.cloudmedia.content.events.ContentPublishedPayload;
 import com.cloudmedia.content.error.ApiException;
 import com.cloudmedia.content.persistence.entity.ContentState;
 import com.cloudmedia.content.persistence.entity.ChannelEntity;
@@ -29,13 +31,16 @@ public class ContentService {
 	private final ChannelRepository channelRepository;
 	private final ChannelMemberRepository channelMemberRepository;
 	private final PolicyEvaluationClient policyEvaluationClient;
+	private final ContentEventPublisher contentEventPublisher;
 
 	public ContentService(ContentRepository contentRepository, ChannelRepository channelRepository,
-			ChannelMemberRepository channelMemberRepository, PolicyEvaluationClient policyEvaluationClient) {
+			ChannelMemberRepository channelMemberRepository, PolicyEvaluationClient policyEvaluationClient,
+			ContentEventPublisher contentEventPublisher) {
 		this.contentRepository = contentRepository;
 		this.channelRepository = channelRepository;
 		this.channelMemberRepository = channelMemberRepository;
 		this.policyEvaluationClient = policyEvaluationClient;
+		this.contentEventPublisher = contentEventPublisher;
 	}
 
 	@Transactional
@@ -99,8 +104,14 @@ public class ContentService {
 		content.setState(ContentState.PUBLISHED);
 		content.setPublishedAt(now);
 		content.setUpdatedAt(now);
+		ContentEntity savedContent = contentRepository.save(content);
+		contentEventPublisher.publishContentPublished(
+				new ContentPublishedPayload(savedContent.getId(), savedContent.getChannel().getId(),
+						savedContent.getTitle(), savedContent.getDescription(), savedContent.getContentType().name(),
+						savedContent.getVisibility().name(), savedContent.getPublishedAt()),
+				null);
 
-		return toResponse(contentRepository.save(content));
+		return toResponse(savedContent);
 	}
 
 	@Transactional

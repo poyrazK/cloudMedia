@@ -59,6 +59,14 @@ public class ContentController {
 		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
 	}
 
+	@PostMapping("/content/{contentId}/unpublish")
+	public ResponseEntity<ApiSuccessResponse<ContentResponse>> unpublishContent(
+			@PathVariable("contentId") @NotBlank String contentId, @Valid @RequestBody PublishContentRequest request,
+			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
+		ContentResponse response = contentService.unpublish(contentId, request.userId());
+		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
+	}
+
 	@GetMapping("/content/{contentId}/playback")
 	public ResponseEntity<ApiSuccessResponse<PlaybackResponse>> getPlayback(
 			@PathVariable("contentId") @NotBlank String contentId,

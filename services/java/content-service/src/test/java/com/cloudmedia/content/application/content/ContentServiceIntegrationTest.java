@@ -4,6 +4,7 @@ import com.cloudmedia.content.api.content.dto.CreateContentRequest;
 import com.cloudmedia.content.api.content.dto.UpdateContentRequest;
 import com.cloudmedia.content.events.ContentEventPublisher;
 import com.cloudmedia.content.events.ContentPublishedPayload;
+import com.cloudmedia.content.events.ContentUpdatedPayload;
 import com.cloudmedia.content.error.ApiException;
 import com.cloudmedia.content.persistence.entity.ChannelEntity;
 import com.cloudmedia.content.persistence.entity.ChannelMemberEntity;
@@ -211,6 +212,34 @@ class ContentServiceIntegrationTest {
 				() -> contentService.unpublish(content.getId(), "publisher-5"));
 
 		assertEquals("CONTENT_STATE_INVALID", exception.getCode());
+	}
+
+	@Test
+	void updateMetadataEmitsContentUpdatedWhenPublished() {
+		ChannelEntity channel = saveChannel("channel-content-11", "content-channel-eleven");
+		saveMembership(channel, "updater-1", ChannelMemberRole.ADMIN);
+		ContentEntity content = saveContent(channel, "Original", "desc", ContentVisibility.PUBLIC,
+				ContentState.PUBLISHED, true);
+
+		contentService.updateMetadata(content.getId(),
+				new UpdateContentRequest("updater-1", "Updated Title", null, ContentVisibility.UNLISTED));
+
+		verify(contentEventPublisher).publishContentUpdated(eq(new ContentUpdatedPayload(content.getId(),
+				channel.getId(), "Updated Title", ContentType.VIDEO.name(), ContentVisibility.UNLISTED.name())),
+				isNull());
+	}
+
+	@Test
+	void updateMetadataEmitsNoEventWhenNotPublished() {
+		ChannelEntity channel = saveChannel("channel-content-12", "content-channel-twelve");
+		saveMembership(channel, "updater-2", ChannelMemberRole.ADMIN);
+		ContentEntity content = saveContent(channel, "Draft content", "desc", ContentVisibility.PRIVATE,
+				ContentState.DRAFT, false);
+
+		contentService.updateMetadata(content.getId(),
+				new UpdateContentRequest("updater-2", "Updated Draft Title", null, null));
+
+		verify(contentEventPublisher, never()).publishContentUpdated(any(), any());
 	}
 
 	private ChannelEntity saveChannel(String id, String slug) {

@@ -57,4 +57,46 @@ class KafkaContentEventPublisherTest {
 		assertNotNull(envelope.eventId());
 		assertNotNull(envelope.occurredAt());
 	}
+
+	@Test
+	void publishContentUpdatedSendsEnvelopeToConfiguredTopic() {
+		MockProducer<String, Object> mockProducer = new MockProducer<>(true, new StringSerializer(),
+				new JsonSerializer<>());
+		ProducerFactory<String, Object> producerFactory = new ProducerFactory<>() {
+			@Override
+			public org.apache.kafka.clients.producer.Producer<String, Object> createProducer() {
+				return mockProducer;
+			}
+
+			@Override
+			public boolean transactionCapable() {
+				return false;
+			}
+
+			@Override
+			public Map<String, Object> getConfigurationProperties() {
+				return new HashMap<>();
+			}
+		};
+		KafkaTemplate<String, Object> kafkaTemplate = new KafkaTemplate<>(producerFactory);
+		ContentEventsProperties properties = new ContentEventsProperties();
+		properties.getTopics().setContentUpdated("cloudmedia.content.updated");
+		KafkaContentEventPublisher publisher = new KafkaContentEventPublisher(kafkaTemplate, properties);
+
+		publisher.publishContentUpdated(
+				new ContentUpdatedPayload("cnt_2", "chn_2", "Updated Title", "VIDEO", "UNLISTED"), "req_456");
+
+		ProducerRecord<String, Object> record = mockProducer.history().getFirst();
+		assertEquals("cloudmedia.content.updated", record.topic());
+		assertEquals("cnt_2", record.key());
+		ContentEventEnvelope envelope = (ContentEventEnvelope) record.value();
+		assertEquals("content.updated", envelope.eventType());
+		assertEquals(1, envelope.eventVersion());
+		assertEquals("content-service", envelope.producer());
+		assertEquals("content", envelope.entityType());
+		assertEquals("cnt_2", envelope.entityId());
+		assertEquals("req_456", envelope.traceId());
+		assertNotNull(envelope.eventId());
+		assertNotNull(envelope.occurredAt());
+	}
 }

@@ -25,6 +25,14 @@ public class KafkaContentEventPublisher implements ContentEventPublisher {
 		kafkaTemplate.send(properties.getTopics().getContentPublished(), payload.contentId(), envelope);
 	}
 
+	@Override
+	public void publishContentUpdated(ContentUpdatedPayload payload, String traceId) {
+		ContentEventEnvelope envelope = new ContentEventEnvelope(UUID.randomUUID().toString(), "content.updated",
+				EVENT_VERSION, Instant.now(), "content-service", "content", payload.contentId(),
+				resolveTraceId(traceId), payload);
+		kafkaTemplate.send(properties.getTopics().getContentUpdated(), payload.contentId(), envelope);
+	}
+
 	private String resolveTraceId(String traceId) {
 		if (traceId != null && !traceId.isBlank()) {
 			return traceId;

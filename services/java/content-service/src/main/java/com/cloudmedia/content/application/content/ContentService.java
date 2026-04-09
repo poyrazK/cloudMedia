@@ -6,6 +6,7 @@ import com.cloudmedia.content.api.content.dto.PlaybackResponse;
 import com.cloudmedia.content.api.content.dto.UpdateContentRequest;
 import com.cloudmedia.content.events.ContentEventPublisher;
 import com.cloudmedia.content.events.ContentPublishedPayload;
+import com.cloudmedia.content.events.ContentUpdatedPayload;
 import com.cloudmedia.content.error.ApiException;
 import com.cloudmedia.content.persistence.entity.ContentState;
 import com.cloudmedia.content.persistence.entity.ChannelEntity;
@@ -83,7 +84,14 @@ public class ContentService {
 		}
 		content.setUpdatedAt(LocalDateTime.now());
 
-		return toResponse(contentRepository.save(content));
+		ContentEntity savedContent = contentRepository.save(content);
+		if (savedContent.getState() == ContentState.PUBLISHED) {
+			contentEventPublisher.publishContentUpdated(new ContentUpdatedPayload(savedContent.getId(),
+					savedContent.getChannel().getId(), savedContent.getTitle(), savedContent.getContentType().name(),
+					savedContent.getVisibility().name()), null);
+		}
+
+		return toResponse(savedContent);
 	}
 
 	@Transactional

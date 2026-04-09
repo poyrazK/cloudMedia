@@ -6,4 +6,9 @@ public class NoopContentEventPublisher implements ContentEventPublisher {
 	public void publishContentPublished(ContentPublishedPayload payload, String traceId) {
 		// intentionally no-op when content event publishing is disabled
 	}
+
+	@Override
+	public void publishContentUpdated(ContentUpdatedPayload payload, String traceId) {
+		// intentionally no-op when content event publishing is disabled
+	}
 }

@@ -25,12 +25,22 @@ public class ContentEventsProperties {
 
 		private String contentPublished = "cloudmedia.content.published";
 
+		private String contentUpdated = "cloudmedia.content.updated";
+
 		public String getContentPublished() {
 			return contentPublished;
 		}
 
 		public void setContentPublished(String contentPublished) {
 			this.contentPublished = contentPublished;
+		}
+
+		public String getContentUpdated() {
+			return contentUpdated;
+		}
+
+		public void setContentUpdated(String contentUpdated) {
+			this.contentUpdated = contentUpdated;
 		}
 	}
 }

@@ -83,6 +83,7 @@ This document defines the MVP API contract groups, standards, and core request/r
 ### `PATCH /v1/content/{content_id}`
 - Partially updates content metadata for channel members
 - Mutable fields (MVP): `title`, `description`, `visibility`
+- Emits `content.updated` event when content is in `PUBLISHED` state
 
 ### `POST /v1/content/{content_id}/publish`
 - Publishes content from `DRAFT` to `PUBLISHED`

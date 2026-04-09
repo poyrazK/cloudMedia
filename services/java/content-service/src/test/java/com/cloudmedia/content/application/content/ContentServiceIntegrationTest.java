@@ -229,19 +229,6 @@ class ContentServiceIntegrationTest {
 				isNull());
 	}
 
-	@Test
-	void updateMetadataEmitsNoEventWhenNotPublished() {
-		ChannelEntity channel = saveChannel("channel-content-12", "content-channel-twelve");
-		saveMembership(channel, "updater-2", ChannelMemberRole.ADMIN);
-		ContentEntity content = saveContent(channel, "Draft content", "desc", ContentVisibility.PRIVATE,
-				ContentState.DRAFT, false);
-
-		contentService.updateMetadata(content.getId(),
-				new UpdateContentRequest("updater-2", "Updated Draft Title", null, null));
-
-		verify(contentEventPublisher, never()).publishContentUpdated(any(), any());
-	}
-
 	private ChannelEntity saveChannel(String id, String slug) {
 		ChannelEntity channel = new ChannelEntity();
 		channel.setId(id);

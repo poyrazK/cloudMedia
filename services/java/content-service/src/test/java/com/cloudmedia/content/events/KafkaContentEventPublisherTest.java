@@ -86,6 +86,7 @@ class KafkaContentEventPublisherTest {
 		publisher.publishContentUpdated(
 				new ContentUpdatedPayload("cnt_2", "chn_2", "Updated Title", "VIDEO", "UNLISTED"), "req_456");
 
+		assertEquals(1, mockProducer.history().size());
 		ProducerRecord<String, Object> record = mockProducer.history().getFirst();
 		assertEquals("cloudmedia.content.updated", record.topic());
 		assertEquals("cnt_2", record.key());
@@ -98,5 +99,11 @@ class KafkaContentEventPublisherTest {
 		assertEquals("req_456", envelope.traceId());
 		assertNotNull(envelope.eventId());
 		assertNotNull(envelope.occurredAt());
+		ContentUpdatedPayload payload = (ContentUpdatedPayload) envelope.payload();
+		assertEquals("cnt_2", payload.contentId());
+		assertEquals("chn_2", payload.channelId());
+		assertEquals("Updated Title", payload.title());
+		assertEquals("VIDEO", payload.contentType());
+		assertEquals("UNLISTED", payload.visibility());
 	}
 }

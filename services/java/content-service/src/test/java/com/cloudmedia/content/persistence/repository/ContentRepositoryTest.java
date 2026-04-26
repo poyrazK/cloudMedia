@@ -69,11 +69,12 @@ class ContentRepositoryTest {
 		contentRepository.saveAndFlush(content(channel, "Draft video", ContentState.DRAFT));
 		contentRepository.saveAndFlush(content(channel, "Published video", ContentState.PUBLISHED));
 
-		var draftItems = contentRepository.findByChannel_IdAndState(channel.getId(), ContentState.DRAFT);
+		var draftItems = contentRepository.findByChannel_IdAndStateOrderByCreatedAtAsc(channel.getId(),
+				ContentState.DRAFT);
 		assertEquals(1, draftItems.size());
 		assertEquals("Draft video", draftItems.get(0).getTitle());
 
-		var byChannel = contentRepository.findByChannel_Id(channel.getId());
+		var byChannel = contentRepository.findByChannel_IdOrderByCreatedAtAsc(channel.getId());
 		assertEquals(2, byChannel.size());
 	}
 

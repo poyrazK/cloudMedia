@@ -6,9 +6,12 @@ import com.cloudmedia.policy.api.policy.dto.EvaluateContentPolicyRequest;
 import com.cloudmedia.policy.api.policy.dto.UpdateContentPolicyRequest;
 import com.cloudmedia.policy.api.policy.dto.UpdateModerationStateRequest;
 import com.cloudmedia.policy.error.ApiException;
+import com.cloudmedia.policy.events.PolicyChangedPayload;
+import com.cloudmedia.policy.events.PolicyEventPublisher;
 import com.cloudmedia.policy.persistence.entity.ContentPolicyEntity;
 import com.cloudmedia.policy.persistence.entity.ModerationState;
 import com.cloudmedia.policy.persistence.repository.ContentPolicyRepository;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -25,8 +28,12 @@ public class ContentPolicyService {
 
 	private final ContentPolicyRepository contentPolicyRepository;
 
-	public ContentPolicyService(ContentPolicyRepository contentPolicyRepository) {
+	private final PolicyEventPublisher policyEventPublisher;
+
+	public ContentPolicyService(ContentPolicyRepository contentPolicyRepository,
+			PolicyEventPublisher policyEventPublisher) {
 		this.contentPolicyRepository = contentPolicyRepository;
+		this.policyEventPublisher = policyEventPublisher;
 	}
 
 	@Transactional
@@ -56,14 +63,25 @@ public class ContentPolicyService {
 			entity.setGeoBlockList(serializeCodesWithGuard(normalizedBlockList));
 		}
 
-		return toResponse(contentPolicyRepository.save(entity));
+		ContentPolicyEntity saved = contentPolicyRepository.save(entity);
+		publishPolicyChanged(saved);
+		return toResponse(saved);
 	}
 
 	@Transactional
 	public ContentPolicyResponse updateModerationState(String contentId, UpdateModerationStateRequest request) {
 		ContentPolicyEntity entity = contentPolicyRepository.findById(contentId).orElseGet(() -> newEntity(contentId));
 		entity.setModerationState(request.moderationState());
-		return toResponse(contentPolicyRepository.save(entity));
+		ContentPolicyEntity saved = contentPolicyRepository.save(entity);
+		publishPolicyChanged(saved);
+		return toResponse(saved);
+	}
+
+	private void publishPolicyChanged(ContentPolicyEntity entity) {
+		PolicyChangedPayload payload = new PolicyChangedPayload(entity.getContentId(), entity.isAgeRestricted(),
+				parseCodes(entity.getGeoAllowList()), parseCodes(entity.getGeoBlockList()),
+				entity.getModerationState().name(), Instant.now());
+		policyEventPublisher.publishPolicyChanged(payload, null);
 	}
 
 	@Transactional(readOnly = true)

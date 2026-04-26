@@ -41,10 +41,12 @@ This document defines the MVP API contract groups, standards, and core request/r
 ## 2) Auth and identity
 
 ### `POST /v1/auth/login`
+
 - Request: email/password
 - Response: access token + refresh token + session id
 
 ### `POST /v1/auth/social-login`
+
 - Request: provider, provider_token, optional device info
 - MVP provider support: `GOOGLE` only
 - Current implementation uses a fake verifier for development/testing only.
@@ -52,14 +54,17 @@ This document defines the MVP API contract groups, standards, and core request/r
 - Response: access token + refresh token + session id
 
 ### `POST /v1/auth/refresh`
+
 - Request: refresh token
 - Response: new access token + new refresh token (rotation)
 
 ### `POST /v1/auth/logout`
+
 - Request: current session or all sessions flag
 - Response: success status
 
 ### 2.1 Identity MVP implementation notes
+
 - Access token TTL: `15 minutes`
 - Refresh token TTL: `30 days`
 - Refresh strategy: rotation on every refresh request
@@ -69,23 +74,28 @@ This document defines the MVP API contract groups, standards, and core request/r
 ## 3) Upload and content
 
 ### `POST /v1/uploads/sessions`
+
 - Creates resumable upload session
 - Validates creator quota and content type
 
 ### `POST /v1/uploads/sessions/{session_id}/finalize`
+
 - Marks upload complete and emits `upload.completed`
 
 ### `POST /v1/content`
+
 - Creates content metadata record in draft state
 - Request fields (MVP): `userId`, `channelId`, `title`, `description`, `contentType`, optional `visibility`
 - Default behavior: `state=DRAFT`, `playbackReady=false`, `publishedAt=null`, `visibility=PRIVATE` when omitted
 
 ### `PATCH /v1/content/{content_id}`
+
 - Partially updates content metadata for channel members
 - Mutable fields (MVP): `title`, `description`, `visibility`
 - Emits `content.updated` event when content is in `PUBLISHED` state
 
 ### `POST /v1/content/{content_id}/publish`
+
 - Publishes content from `DRAFT` to `PUBLISHED`
 - Request fields (MVP): `userId`
 - Requires `playbackReady=true`
@@ -94,39 +104,55 @@ This document defines the MVP API contract groups, standards, and core request/r
 - Returns `409 CONTENT_STATE_INVALID` when state is not `DRAFT`
 
 ### `POST /v1/content/{content_id}/unpublish`
+
 - Unpublishes content from `PUBLISHED` to `PRIVATE`
 - Request fields (MVP): `userId`
 - Returns `409 CONTENT_STATE_INVALID` when state is not `PUBLISHED`
 
 ### `GET /v1/content/{content_id}/playback`
+
 - Returns signed manifest URL and available renditions
 - Applies age/geo/moderation checks
 - Query params (MVP): optional `countryCode` (2-letter code), optional `ageVerified` (`true|false`)
 - Returns `403 CONTENT_POLICY_DENIED` when policy blocks playback
 
+### `GET /v1/channels/{channel_id}/content`
+
+- Returns list of content for a channel
+- Query params: optional `state` (filter by ContentState: DRAFT, PUBLISHED, PRIVATE)
+- Returns `404 CHANNEL_NOT_FOUND` when channel does not exist
+- Response includes `thumbnailUrl` field per content item
+
 ## 4) Social
 
 ### `POST /v1/social/follows/{channel_id}`
+
 - Follow channel
 
 ### `DELETE /v1/social/follows/{channel_id}`
+
 - Unfollow channel
 
 ### `POST /v1/social/comments`
+
 - Creates comment (blocked-word filter at write-time)
 
 ### `PATCH /v1/social/comments/{comment_id}`
+
 - Edits comment and stores revision record
 
 ### `POST /v1/social/comments/{comment_id}/reports`
+
 - Files moderation report
 
 ### `POST /v1/social/playlists`
+
 - Creates playlist
 
 ## 5) Discovery and search
 
 ### `GET /v1/search`
+
 - Keyword search over OpenSearch-backed index
 - MVP exception to the global cursor-pagination rule: uses `q`, `page`, `size`
 - Current semantics: `page` is 0-based, `size` max is `100`
@@ -136,10 +162,12 @@ This document defines the MVP API contract groups, standards, and core request/r
 - TODO: migrate search results to cursor-based pagination after the initial read API stabilizes
 
 ### `GET /v1/search/autocomplete`
+
 - Title suggestion endpoint over the derived search index
 - MVP params: required non-blank `q`; optional integer `size` with min `1`, default `5`, max `10`
 
 ### `GET /v1/discovery/home`
+
 - Balanced feed (followed + trending + fresh + similar)
 - MVP params: optional `userId`; optional integer `size` with min `1`, default `20`, max `50`; optional `countryCode` (ISO 3166-1 alpha-2 uppercase, e.g. `US`); optional `ageVerified`
 - Returns a generic blended feed when `userId` is absent
@@ -147,43 +175,53 @@ This document defines the MVP API contract groups, standards, and core request/r
 - Returns `503 POLICY_SERVICE_UNAVAILABLE` when policy evaluation fails
 
 ### `GET /v1/discovery/trending`
+
 - Region-level trending feed
 
 ## 6) Livestream and chat
 
 ### `POST /v1/live/streams`
+
 - Creates stream with ingest credentials
 
 ### `POST /v1/live/streams/{stream_id}/start`
+
 - Starts stream session
 
 ### `POST /v1/live/streams/{stream_id}/end`
+
 - Ends stream and triggers replay job
 
 ### `GET /v1/live/streams/{stream_id}/replay-status`
+
 - Returns replay processing status and resulting content id
 
 ### `POST /v1/chat/rooms/{room_id}/messages`
+
 - Sends chat message
 - Applies anti-spam and moderation hooks
 
 ## 7) Policy and moderation
 
 ### `PATCH /v1/policy/content/{content_id}`
+
 - Updates age restriction, geo allow/block rules
 - Request supports partial upsert of `ageRestricted`, `geoAllowList`, and `geoBlockList`
 - Omitted fields remain unchanged; empty geo lists clear that specific list
 
 ### `PATCH /v1/moderation/content/{content_id}`
+
 - Applies moderation state (visible, hidden, removed)
 - Request supports `moderationState` with values `VISIBLE`, `HIDDEN`, or `REMOVED`
 - Reuses the content policy record and preserves existing age/geo fields
 
 ### `POST /v1/policy/content/{content_id}/evaluate`
+
 - Evaluates whether content is allowed for viewing/playback in a given request context
 - Request supports optional `countryCode` and optional `ageVerified`
 
 ### `GET /v1/moderation/comments/reports`
+
 - Lists reported comments for moderator queue
 
 ## 8) HTTP status usage

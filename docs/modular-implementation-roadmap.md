@@ -37,7 +37,7 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 - Phase A (done): persistence foundation (Flyway migrations, JPA entities, repositories, repository tests).
 - Phase B (done): channel APIs (explicit create/list/get).
 - Phase C (done): content draft/update APIs.
-- Phase D (next): publish/unpublish workflow with playback-ready guard.
+- Phase D (done): publish/unpublish workflow with playback-ready guard + content listing + thumbnail URL support.
 
 ### PR-005: policy-service MVP
 - Phase A (next): service foundation, persistence model, and error/API baseline.
@@ -87,4 +87,5 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 - PR-001.5: completed
 - PR-002: completed
 - PR-003: completed
-- PR-004: in progress (Phases A, B, and C complete)
+- PR-004: completed (Phases A, B, C, and D all complete - content listing + thumbnail support added)
+- PR-005: next (policy-service MVP)

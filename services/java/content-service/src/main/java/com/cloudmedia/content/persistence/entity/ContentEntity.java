@@ -53,6 +53,9 @@ public class ContentEntity {
 	@Column(name = "published_at")
 	private LocalDateTime publishedAt;
 
+	@Column(name = "thumbnail_url", length = 512)
+	private String thumbnailUrl;
+
 	public String getId() {
 		return id;
 	}
@@ -139,5 +142,13 @@ public class ContentEntity {
 
 	public void setPublishedAt(LocalDateTime publishedAt) {
 		this.publishedAt = publishedAt;
+	}
+
+	public String getThumbnailUrl() {
+		return thumbnailUrl;
+	}
+
+	public void setThumbnailUrl(String thumbnailUrl) {
+		this.thumbnailUrl = thumbnailUrl;
 	}
 }

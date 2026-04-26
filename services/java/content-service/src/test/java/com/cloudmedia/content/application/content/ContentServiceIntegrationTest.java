@@ -90,7 +90,7 @@ class ContentServiceIntegrationTest {
 
 		LocalDateTime previousUpdatedAt = created.updatedAt();
 		var updated = contentService.updateMetadata(created.id(),
-				new UpdateContentRequest("user-2", "Updated title", null, ContentVisibility.UNLISTED));
+				new UpdateContentRequest("user-2", "Updated title", null, ContentVisibility.UNLISTED, null));
 
 		assertEquals("Updated title", updated.title());
 		assertEquals("Original description", updated.description());
@@ -222,11 +222,103 @@ class ContentServiceIntegrationTest {
 				ContentState.PUBLISHED, true);
 
 		contentService.updateMetadata(content.getId(),
-				new UpdateContentRequest("updater-1", "Updated Title", null, ContentVisibility.UNLISTED));
+				new UpdateContentRequest("updater-1", "Updated Title", null, ContentVisibility.UNLISTED, null));
 
 		verify(contentEventPublisher).publishContentUpdated(eq(new ContentUpdatedPayload(content.getId(),
 				channel.getId(), "Updated Title", ContentType.VIDEO.name(), ContentVisibility.UNLISTED.name())),
 				isNull());
+	}
+
+	@Test
+	void listByChannelReturnsEmptyListWhenNoPublicContent() {
+		ChannelEntity channel = saveChannel("channel-list-vis-1", "list-channel-vis-one");
+
+		var result = contentService.listByChannel(channel.getId(), null);
+
+		assertTrue(result.isEmpty());
+	}
+
+	@Test
+	void listByChannelFiltersPrivateContent() {
+		ChannelEntity channel = saveChannel("channel-list-vis-2", "list-channel-vis-two");
+		saveMembership(channel, "user-vis-1", ChannelMemberRole.OWNER);
+		saveContent(channel, "Private Video", "desc", ContentVisibility.PRIVATE, ContentState.PUBLISHED, true);
+		saveContent(channel, "Public Video", "desc", ContentVisibility.PUBLIC, ContentState.PUBLISHED, true);
+
+		var result = contentService.listByChannel(channel.getId(), null);
+
+		assertEquals(1, result.size());
+		assertEquals("Public Video", result.get(0).title());
+	}
+
+	@Test
+	void listByChannelFiltersByStateAndVisibility() {
+		ChannelEntity channel = saveChannel("channel-list-vis-3", "list-channel-vis-three");
+		saveMembership(channel, "user-vis-2", ChannelMemberRole.OWNER);
+		saveContent(channel, "Private Draft", "desc", ContentVisibility.PRIVATE, ContentState.DRAFT, false);
+		saveContent(channel, "Public Draft", "desc", ContentVisibility.PUBLIC, ContentState.DRAFT, false);
+		saveContent(channel, "Private Published", "desc", ContentVisibility.PRIVATE, ContentState.PUBLISHED, true);
+		saveContent(channel, "Public Published", "desc", ContentVisibility.PUBLIC, ContentState.PUBLISHED, true);
+
+		var result = contentService.listByChannel(channel.getId(), ContentState.PUBLISHED);
+
+		assertEquals(1, result.size());
+		assertEquals("Public Published", result.get(0).title());
+	}
+
+	@Test
+	void listByChannelReturnsContentOrderedByCreatedAt() {
+		ChannelEntity channel = saveChannel("channel-list-vis-4", "list-channel-vis-four");
+		saveMembership(channel, "user-vis-3", ChannelMemberRole.OWNER);
+		ContentEntity first = saveContent(channel, "First", "desc", ContentVisibility.PUBLIC, ContentState.PUBLISHED,
+				true);
+		first.setCreatedAt(LocalDateTime.now().minusDays(1));
+		contentRepository.saveAndFlush(first);
+		ContentEntity second = saveContent(channel, "Second", "desc", ContentVisibility.PUBLIC, ContentState.PUBLISHED,
+				true);
+		second.setCreatedAt(LocalDateTime.now());
+		contentRepository.saveAndFlush(second);
+
+		var result = contentService.listByChannel(channel.getId(), null);
+
+		assertEquals(2, result.size());
+		assertEquals("First", result.get(0).title());
+		assertEquals("Second", result.get(1).title());
+	}
+
+	@Test
+	void updateMetadataSetsThumbnailUrl() {
+		ChannelEntity channel = saveChannel("channel-vis-thumb", "vis-thumb-channel");
+		saveMembership(channel, "user-thumb", ChannelMemberRole.OWNER);
+		ContentEntity content = saveContent(channel, "Video", "desc", ContentVisibility.PUBLIC, ContentState.DRAFT,
+				false);
+
+		var updated = contentService.updateMetadata(content.getId(),
+				new UpdateContentRequest("user-thumb", null, null, null, "https://cdn.example.com/thumb/xyz.jpg"));
+
+		assertEquals("https://cdn.example.com/thumb/xyz.jpg", updated.thumbnailUrl());
+	}
+
+	@Test
+	void listByChannelReturns404WhenChannelNotFound() {
+		ApiException exception = assertThrows(ApiException.class,
+				() -> contentService.listByChannel("nonexistent-channel", null));
+
+		assertEquals("CHANNEL_NOT_FOUND", exception.getCode());
+	}
+
+	@Test
+	void listByChannelIncludesThumbnailUrl() {
+		ChannelEntity channel = saveChannel("channel-list-4", "list-channel-four");
+		ContentEntity content = saveContent(channel, "With Thumbnail", "desc", ContentVisibility.PUBLIC,
+				ContentState.PUBLISHED, true);
+		content.setThumbnailUrl("https://cdn.example.com/thumb/abc123.jpg");
+		contentRepository.saveAndFlush(content);
+
+		var result = contentService.listByChannel(channel.getId(), null);
+
+		assertEquals(1, result.size());
+		assertEquals("https://cdn.example.com/thumb/abc123.jpg", result.get(0).thumbnailUrl());
 	}
 
 	private ChannelEntity saveChannel(String id, String slug) {

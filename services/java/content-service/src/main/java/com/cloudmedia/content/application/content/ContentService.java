@@ -82,6 +82,9 @@ public class ContentService {
 		if (request.visibility() != null) {
 			content.setVisibility(request.visibility());
 		}
+		if (request.thumbnailUrl() != null && !request.thumbnailUrl().isBlank()) {
+			content.setThumbnailUrl(request.thumbnailUrl());
+		}
 		content.setUpdatedAt(LocalDateTime.now());
 
 		ContentEntity savedContent = contentRepository.save(content);
@@ -177,6 +180,23 @@ public class ContentService {
 	private ContentResponse toResponse(ContentEntity content) {
 		return new ContentResponse(content.getId(), content.getChannel().getId(), content.getTitle(),
 				content.getDescription(), content.getContentType(), content.getState(), content.getVisibility(),
-				content.isPlaybackReady(), content.getCreatedAt(), content.getUpdatedAt(), content.getPublishedAt());
+				content.isPlaybackReady(), content.getCreatedAt(), content.getUpdatedAt(), content.getPublishedAt(),
+				content.getThumbnailUrl());
+	}
+
+	@Transactional(readOnly = true)
+	public List<ContentResponse> listByChannel(String channelId, ContentState state) {
+		if (!channelRepository.existsById(channelId)) {
+			throw new ApiException(HttpStatus.NOT_FOUND, "CHANNEL_NOT_FOUND", "Channel not found", null);
+		}
+		List<ContentEntity> contents;
+		if (state != null) {
+			contents = contentRepository.findByChannel_IdAndStateAndVisibilityWithChannelOrderByCreatedAtAsc(channelId,
+					state, ContentVisibility.PUBLIC);
+		} else {
+			contents = contentRepository.findByChannel_IdAndVisibilityWithChannelOrderByCreatedAtAsc(channelId,
+					ContentVisibility.PUBLIC);
+		}
+		return contents.stream().map(this::toResponse).toList();
 	}
 }

@@ -7,5 +7,5 @@ import java.time.LocalDateTime;
 
 public record ContentResponse(String id, String channelId, String title, String description, ContentType contentType,
 		ContentState state, ContentVisibility visibility, boolean playbackReady, LocalDateTime createdAt,
-		LocalDateTime updatedAt, LocalDateTime publishedAt) {
+		LocalDateTime updatedAt, LocalDateTime publishedAt, String thumbnailUrl) {
 }

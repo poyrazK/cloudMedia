@@ -3,9 +3,11 @@ package com.cloudmedia.content.api.channel;
 import com.cloudmedia.content.api.channel.dto.ChannelResponse;
 import com.cloudmedia.content.api.channel.dto.CreateChannelRequest;
 import com.cloudmedia.content.api.channel.dto.UserChannelResponse;
+import com.cloudmedia.content.api.content.dto.ContentResponse;
 import com.cloudmedia.content.api.response.ApiMeta;
 import com.cloudmedia.content.api.response.ApiSuccessResponse;
 import com.cloudmedia.content.application.channel.ChannelService;
+import com.cloudmedia.content.application.content.ContentService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
@@ -19,7 +21,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.cloudmedia.content.persistence.entity.ContentState;
 
 @Validated
 @RestController
@@ -27,9 +31,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class ChannelController {
 
 	private final ChannelService channelService;
+	private final ContentService contentService;
 
-	public ChannelController(ChannelService channelService) {
+	public ChannelController(ChannelService channelService, ContentService contentService) {
 		this.channelService = channelService;
+		this.contentService = contentService;
 	}
 
 	@PostMapping("/channels")
@@ -61,6 +67,15 @@ public class ChannelController {
 			@PathVariable("userId") @NotBlank String userId,
 			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
 		List<UserChannelResponse> response = channelService.listByUserId(userId);
+		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
+	}
+
+	@GetMapping("/channels/{channelId}/content")
+	public ResponseEntity<ApiSuccessResponse<List<ContentResponse>>> listChannelContent(
+			@PathVariable("channelId") @NotBlank String channelId,
+			@RequestParam(value = "state", required = false) ContentState state,
+			@RequestHeader(value = "X-Request-Id", required = false) String requestId) {
+		List<ContentResponse> response = contentService.listByChannel(channelId, state);
 		return ResponseEntity.ok(new ApiSuccessResponse<>(response, meta(requestId)));
 	}
 

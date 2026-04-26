@@ -40,10 +40,10 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 - Phase D (done): publish/unpublish workflow with playback-ready guard + content listing + thumbnail URL support.
 
 ### PR-005: policy-service MVP
-- Phase A (next): service foundation, persistence model, and error/API baseline.
-- Phase B: age restriction and geo policy CRUD.
-- Phase C: moderation state endpoint.
-- Moderation visibility state endpoint.
+- Phase A (done): service foundation, persistence model, and error/API baseline.
+- Phase B (done): age restriction and geo policy CRUD.
+- Phase C (done): moderation state endpoint.
+- Phase D (done): Kafka event publishing for policy changes.
 
 ### PR-006: social-service MVP
 - Comments create/edit/report.
@@ -88,4 +88,4 @@ This roadmap breaks implementation into small, reviewable slices with one primar
 - PR-002: completed
 - PR-003: completed
 - PR-004: completed (Phases A, B, C, and D all complete - content listing + thumbnail support added)
-- PR-005: next (policy-service MVP)
+- PR-005: completed (Phases A, B, C, and D all complete - Kafka event publishing added)

@@ -88,3 +88,4 @@ Implement cursor-based pagination for content listing.
 - Migration file: `V3__add_content_thumbnail.sql`
 - New tests: 7 tests added (5 integration + 2 web MVC)
 - Total test count: 50 (all passing)
+

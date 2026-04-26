@@ -237,4 +237,3 @@ This document defines the MVP API contract groups, standards, and core request/r
 - `429`: rate limit exceeded
 - `500`: internal error
 - `503`: dependency unavailable (e.g. `POLICY_SERVICE_UNAVAILABLE` on `GET /v1/discovery/home`)
-

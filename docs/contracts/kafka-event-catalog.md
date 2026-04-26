@@ -107,10 +107,10 @@ All events must use this envelope:
 {
   "content_id": "cnt_123",
   "age_restricted": true,
-  "geo_allow": ["TR"],
-  "geo_block": [],
-  "moderation_state": "visible",
-  "updated_by": "mod_123"
+  "geo_allow_list": ["TR", "DE"],
+  "geo_block_list": ["RU"],
+  "moderation_state": "HIDDEN",
+  "occurred_at": "2026-03-09T12:00:00Z"
 }
 ```
 
